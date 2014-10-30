@@ -3,6 +3,8 @@ package main
 type Config struct {
 	HttpBind []string
 	PidFile  string
+	User     string
+	Dir      string
 }
 
 var (
@@ -11,7 +13,7 @@ var (
 
 func InitConfig() error {
 	Conf = &Config{
-		HttpBind: {"127.0.0.1:8180"},
+		HttpBind: []string{"127.0.0.1:8180"},
 		PidFile:  "/tmp/gim-web.pid",
 		User:     "nobody nobody",
 		Dir:      "./",
