@@ -13,5 +13,5 @@ func TestServer(w http.ResponseWriter, r *http.Request) {
 
 	//获取参数(无)
 	res := map[string]interface{}{"ret": OK}
-	retWrite(w, r, res, "")
+	retWrite(w, r, res, "", time.Now())
 }
