@@ -3,6 +3,7 @@ package main
 import (
 	"common"
 	"glog"
+	"runtime"
 )
 
 func main() {
@@ -15,7 +16,8 @@ func main() {
 		return
 	}
 	// Set max routine
-	runtime.GOMAXPROCS(runtime.NumCPU())
+	max := runtime.NumCPU()
+	runtime.GOMAXPROCS(max)
 
 	// start http listen.
 	StartHTTP()

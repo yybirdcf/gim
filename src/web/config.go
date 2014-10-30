@@ -11,10 +11,10 @@ var (
 
 func InitConfig() error {
 	Conf = &Config{
-		HttpBind : {"127.0.0.1:8180"}
-		PidFile : "/tmp/gim-web.pid"
-		User : "nobody nobody"
-		Dir : "./"
+		HttpBind: {"127.0.0.1:8180"},
+		PidFile:  "/tmp/gim-web.pid",
+		User:     "nobody nobody",
+		Dir:      "./",
 	}
 
 	return nil
