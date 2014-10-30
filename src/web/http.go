@@ -40,7 +40,7 @@ func httpListen(mux *http.ServeMux, bind string) {
 }
 
 //json数据输出到客户端
-func retWrite(w http.ResponseWriter, r *http.Request, res map[string]interface{}, callback string, start time.Time) {
+func retWrite(w http.ResponseWriter, r *http.Request, res map[string]interface{}, callback string) {
 	data, err := json.Marshal(res) //格式化json数据
 	if err != nil {
 		glog.Errorf("json.Marshal(\"%v\") error(%v)", res, err)
@@ -59,5 +59,5 @@ func retWrite(w http.ResponseWriter, r *http.Request, res map[string]interface{}
 	} else {
 		glog.V(1).Infof("w.Write(\"%s\") write %d bytes", dataStr, n)
 	}
-	glog.Infof("req: \"%s\", res:\"%s\", ip:\"%s\", time:\"%fs\"", r.URL.String(), dataStr, r.RemoteAddr, time.Now().Sub(start).Seconds())
+	glog.Infof("req: \"%s\", res:\"%s\", ip:\"%s\", time:\"%fs\"", r.URL.String(), dataStr, r.RemoteAddr, time.Now().Seconds())
 }
