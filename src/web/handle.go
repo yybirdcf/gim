@@ -1,9 +1,7 @@
 package main
 
 import (
-	"glog"
 	"net/http"
-	"time"
 )
 
 //测试web服务器
