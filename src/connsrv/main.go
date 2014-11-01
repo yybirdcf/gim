@@ -9,10 +9,10 @@ import (
 
 func main() {
 
-	fmt.Printf("connect server start")
+	fmt.Printf("connect server start\n")
 
 	if err := InitConfig(); err != nil {
-		fmt.Printf("InitConfig() error(%v)", err)
+		fmt.Printf("InitConfig() error(%v)\n", err)
 		return
 	}
 
@@ -27,11 +27,11 @@ func main() {
 	// sleep one second, let the listen start
 	time.Sleep(time.Second)
 	if err := common.InitProcess(Conf.User, Conf.Dir, Conf.PidFile); err != nil {
-		fmt.Printf("common.InitProcess() error(%v)", err)
+		fmt.Printf("common.InitProcess() error(%v)\n", err)
 		return
 	}
 	// init signals, block wait signals
 	signalCH := common.InitSignal()
 	common.HandleSignal(signalCH)
-	fmt.Printf("gim connect server stop")
+	fmt.Printf("gim connect server stop\n")
 }

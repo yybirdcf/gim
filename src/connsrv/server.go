@@ -31,7 +31,7 @@ func (self *Server) TakeToken() {
 func CreateServer() *Server {
 	server := &Server{
 		clients: common.NewSafeMap(),
-		tokens:  make(chan int),
+		tokens:  make(chan int, Conf.MaxClients),
 		pending: make(chan net.Conn),
 		quiting: make(chan net.Conn),
 		in:      make(chan string),
@@ -122,6 +122,8 @@ func (self *Server) Start() {
 	}
 
 	go func() {
+		fmt.Printf("begin to accept connects\n")
+
 		for {
 			conn, err := self.listener.Accept()
 
