@@ -1,7 +1,6 @@
 package common
 
 import (
-	"encoding/hex"
 	"errors"
 	"time"
 )
@@ -23,7 +22,7 @@ var ErrSequenceExpired = errors.New("sequence expired")
 var sequence int64
 var lastTimestamp int64
 
-func NewGuid(workId int64) (int64, error) {
+func NewGuid(workerId int64) (int64, error) {
 	ts := time.Now().UnixNano() / 1e6
 
 	if ts < lastTimestamp {

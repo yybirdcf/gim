@@ -42,7 +42,7 @@ func (self *SafeMap) Set(k interface{}, v interface{}) bool {
 	return true
 }
 
-func (self *SafeMap) Check(k interface{}) {
+func (self *SafeMap) Check(k interface{}) bool {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
