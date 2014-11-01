@@ -28,6 +28,7 @@ func main() {
 		for {
 			if line, _, err := connin.ReadLine(); err == nil {
 				stdout.WriteString(string(line))
+				stdout.Flush()
 			}
 		}
 	}()
@@ -36,6 +37,7 @@ func main() {
 	for {
 		if line, _, err := stdin.ReadLine(); err == nil {
 			connout.WriteString(string(line) + "\n")
+			connout.Flush()
 		}
 	}
 }
