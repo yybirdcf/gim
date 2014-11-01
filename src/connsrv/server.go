@@ -79,7 +79,9 @@ func (self *Server) join(conn net.Conn) {
 
 			//处理消息
 			//parse msg
-			HandleClientMsg(msg)
+			// HandleClientMsg(msg)
+			//暂时紧紧回返字符串
+			client.out <- msg
 		}
 	}()
 
