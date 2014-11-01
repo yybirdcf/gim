@@ -26,7 +26,7 @@ func main() {
 	//gorouting负责接收服务器消息
 	go func() {
 		for {
-			if line, err := connin.ReadLine(); err == nil {
+			if line, _, err := connin.ReadLine(); err == nil {
 				stdout.WriteString(string(line))
 			}
 		}
@@ -34,7 +34,7 @@ func main() {
 
 	//主进程负责接收用户输入
 	for {
-		if line, err := stdin.ReadLine(); err == nil {
+		if line, _, err := stdin.ReadLine(); err == nil {
 			connout.WriteString(string(line) + "\n")
 		}
 	}
