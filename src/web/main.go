@@ -8,6 +8,9 @@ import (
 )
 
 func main() {
+	l4g.AddFilter("file", l4g.NewFileLogWriter("/data2/logs/gim.log", false))
+	l4g.LoadConfiguration("./web_log.xml")
+
 	var err error
 
 	l4g.Trace("gim web start....")
