@@ -2,17 +2,16 @@ package main
 
 import (
 	"common"
-	"glog"
+	l4g "log4go"
 	"runtime"
 	"time"
 )
 
 func main() {
-	glog.Infof("connect server start")
-	defer glog.Flush()
+	l4g.Trace("connect server start")
 
 	if err := InitConfig(); err != nil {
-		glog.Errorf("InitConfig() error(%v)", err)
+		l4g.Error("InitConfig() error(%v)", err)
 		return
 	}
 
@@ -27,11 +26,11 @@ func main() {
 	// sleep one second, let the listen start
 	time.Sleep(time.Second)
 	if err := common.InitProcess(Conf.User, Conf.Dir, Conf.PidFile); err != nil {
-		glog.Errorf("common.InitProcess() error(%v)", err)
+		l4g.Error("common.InitProcess() error(%v)", err)
 		return
 	}
 	// init signals, block wait signals
 	signalCH := common.InitSignal()
 	common.HandleSignal(signalCH)
-	glog.Info("gim connect server stop")
+	l4g.Trace("gim connect server stop")
 }

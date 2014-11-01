@@ -2,8 +2,7 @@ package main
 
 import (
 	"common"
-	"fmt"
-	"glog"
+	l4g "log4go"
 	"net"
 	"time"
 )
@@ -62,7 +61,7 @@ func (self *Server) listen() {
 func (self *Server) join(conn net.Conn) {
 	guid, err := common.NewGuid(int64(time.Now().Second()))
 	if err != nil {
-		glog.Errorf("new guid failed")
+		l4g.Error("new guid failed")
 		self.quiting <- conn
 		return
 	}
@@ -70,19 +69,19 @@ func (self *Server) join(conn net.Conn) {
 	client := CreateClient(conn, guid)
 	self.clients.Set(conn, client)
 
-	glog.Infof("new client join: \"%v\"", conn)
+	l4g.Trace("new client join: \"%v\"", conn)
 
 	//开一个gorouting处理这个客户端输入
 	go func() {
 		for {
 			msg := <-client.in
-			glog.Infof("Got msg: %s from client id: %d", msg, client.GetId())
+			l4g.Trace("Got msg: %s from client id: %d", msg, client.GetId())
 
 			//处理消息
 			//parse msg
 			// HandleClientMsg(msg)
 			//暂时紧紧回返字符串
-			fmt.Printf("%s", msg)
+			l4g.Trace("%s", msg)
 			client.out <- msg
 		}
 	}()
@@ -91,7 +90,7 @@ func (self *Server) join(conn net.Conn) {
 	go func() {
 		for {
 			conn := <-client.quiting
-			glog.Infof("client %d is quiting", client.GetId())
+			l4g.Trace("client %d is quiting", client.GetId())
 			self.quiting <- conn
 		}
 	}()
@@ -111,11 +110,11 @@ func (self *Server) Start() {
 	listener, err := net.Listen("tcp", Conf.TcpBind)
 	self.listener = listener
 	if err != nil {
-		glog.Infof("server %s listen failed", Conf.TcpBind)
+		l4g.Error("server %s listen failed", Conf.TcpBind)
 		return
 	}
 
-	glog.Infof("server %s start", Conf.TcpBind)
+	l4g.Trace("server %s start", Conf.TcpBind)
 
 	//预先生成指定连接数的token
 	for i := 0; i < Conf.MaxClients; i++ {
@@ -127,11 +126,11 @@ func (self *Server) Start() {
 			conn, err := self.listener.Accept()
 
 			if err != nil {
-				glog.Errorf("server accept error : \"%v\"", err)
+				l4g.Error("server accept error : \"%v\"", err)
 				return
 			}
 
-			glog.Infof("new client connect: \"%v\"", conn)
+			l4g.Trace("new client connect: \"%v\"", conn)
 			self.TakeToken() //如果没有token了，会阻塞在这里
 			self.pending <- conn
 		}

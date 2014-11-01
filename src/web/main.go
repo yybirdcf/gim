@@ -2,7 +2,7 @@ package main
 
 import (
 	"common"
-	"glog"
+	l4g "log4go"
 	"runtime"
 	"time"
 )
@@ -10,10 +10,10 @@ import (
 func main() {
 	var err error
 
-	glog.Infof("gim web start....")
-	defer glog.Flush()
+	l4g.Trace("gim web start....")
+
 	if err = InitConfig(); err != nil {
-		glog.Errorf("InitConfig() error(%v)", err)
+		l4g.Error("InitConfig() error(%v)", err)
 		return
 	}
 	// Set max routine
@@ -26,11 +26,11 @@ func main() {
 	// sleep one second, let the listen start
 	time.Sleep(time.Second)
 	if err = common.InitProcess(Conf.User, Conf.Dir, Conf.PidFile); err != nil {
-		glog.Errorf("common.InitProcess() error(%v)", err)
+		l4g.Error("common.InitProcess() error(%v)", err)
 		return
 	}
 	// init signals, block wait signals
 	signalCH := common.InitSignal()
 	common.HandleSignal(signalCH)
-	glog.Info("gim web stop")
+	l4g.Trace("gim web stop")
 }
