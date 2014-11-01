@@ -23,8 +23,8 @@ func (self *Client) GetId() int64 {
 
 //初始化一个客户端结构
 func CreateClient(conn net.Conn, id int64) *Client {
-	reader = bufio.NewReader(conn)
-	writer = bufio.NewWriter(conn)
+	reader := bufio.NewReader(conn)
+	writer := bufio.NewWriter(conn)
 
 	client := &Client{
 		conn:   conn,

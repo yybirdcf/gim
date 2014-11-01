@@ -1,9 +1,5 @@
 package main
 
-import (
-	"glog"
-)
-
 func HandleServerMsg(msg string) {
 
 }

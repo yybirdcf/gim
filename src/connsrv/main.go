@@ -1,6 +1,7 @@
 package main
 
 import (
+	"common"
 	"glog"
 	"runtime"
 	"time"
@@ -11,7 +12,7 @@ func main() {
 	defer glog.Flush()
 
 	if err := InitConfig(); err != nil {
-		glog.ErrorF("InitConfig() error(%v)", err)
+		glog.Errorf("InitConfig() error(%v)", err)
 		return
 	}
 
@@ -25,7 +26,7 @@ func main() {
 	// init process
 	// sleep one second, let the listen start
 	time.Sleep(time.Second)
-	if err = common.InitProcess(Conf.User, Conf.Dir, Conf.PidFile); err != nil {
+	if err := common.InitProcess(Conf.User, Conf.Dir, Conf.PidFile); err != nil {
 		glog.Errorf("common.InitProcess() error(%v)", err)
 		return
 	}
