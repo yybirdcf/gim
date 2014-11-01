@@ -29,8 +29,9 @@ func (self *Server) TakeToken() {
 }
 
 func CreateServer() *Server {
+	m := make(map[net.Conn]*Client)
 	server := &Server{
-		clients: common.NewSafeMap(make(map[net.Conn]*Client)),
+		clients: common.NewSafeMap(m),
 		tokens:  make(chan int),
 		pending: make(chan net.Conn),
 		quiting: make(chan net.Conn),
