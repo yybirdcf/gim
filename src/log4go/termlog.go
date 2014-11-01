@@ -3,10 +3,9 @@
 package log4go
 
 import (
-	"fmt"
 	"io"
 	"os"
-	"time"
+	"fmt"
 )
 
 var stdout io.Writer = os.Stdout
@@ -27,7 +26,7 @@ func (w ConsoleLogWriter) run(out io.Writer) {
 
 	for rec := range w {
 		if at := rec.Created.UnixNano() / 1e9; at != timestrAt {
-			timestr, timestrAt = rec.Created.Format("15:04:05 MST 2006/01/02"), at
+			timestr, timestrAt = rec.Created.Format("01/02/06 15:04:05"), at
 		}
 		fmt.Fprint(out, "[", timestr, "] [", levelStrings[rec.Level], "] ", rec.Message, "\n")
 	}
@@ -43,5 +42,4 @@ func (w ConsoleLogWriter) LogWrite(rec *LogRecord) {
 // send log messages to this logger after a Close have undefined behavior.
 func (w ConsoleLogWriter) Close() {
 	close(w)
-	time.Sleep(50 * time.Millisecond) // Try to give console I/O time to complete
 }

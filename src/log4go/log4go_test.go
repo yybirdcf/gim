@@ -18,7 +18,7 @@ const testLogFile = "_logtest.log"
 
 var now time.Time = time.Unix(0, 1234567890123456789).In(time.UTC)
 
-func newLogRecord(lvl Level, src string, msg string) *LogRecord {
+func newLogRecord(lvl level, src string, msg string) *LogRecord {
 	return &LogRecord{
 		Level:   lvl,
 		Source:  src,
@@ -57,7 +57,7 @@ var formatTests = []struct {
 		Formats: map[string]string{
 			// TODO(kevlar): How can I do this so it'll work outside of PST?
 			FORMAT_DEFAULT: "[2009/02/13 23:31:30 UTC] [EROR] (source) message\n",
-			FORMAT_SHORT:   "[23:31 13/02/09] [EROR] message\n",
+			FORMAT_SHORT:   "[23:31 02/13/09] [EROR] message\n",
 			FORMAT_ABBREV:  "[EROR] message\n",
 		},
 	},
@@ -89,7 +89,7 @@ var logRecordWriteTests = []struct {
 			Message: "message",
 			Created: now,
 		},
-		Console: "[23:31:30 UTC 2009/02/13] [CRIT] message\n",
+		Console: "[02/13/09 23:31:30] [CRIT] message\n",
 	},
 }
 
