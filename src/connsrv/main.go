@@ -14,7 +14,7 @@ func main() {
 	l4g.LoadConfiguration("./connsrv_log.xml")
 	defer l4g.Close()
 
-	l4g.Trace("connect server start")
+	l4g.Debug("connect server start")
 
 	if err := InitConfig(); err != nil {
 		l4g.Error("InitConfig() error(%v)", err)
