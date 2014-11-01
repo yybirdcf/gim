@@ -2,24 +2,18 @@ package main
 
 import (
 	"common"
-	l4g "log4go"
+	"fmt"
 	"runtime"
 	"time"
 )
 
 func main() {
-	l4g.AddFilter("stdout", l4g.TRACE, l4g.NewConsoleLogWriter())
-	l4g.AddFilter("stdout", l4g.DEBUG, l4g.NewConsoleLogWriter())
-	l4g.AddFilter("stdout", l4g.ERROR, l4g.NewConsoleLogWriter())
-	l4g.LoadConfiguration("./web_log.xml")
-	defer l4g.Close()
-
 	var err error
 
-	l4g.Trace("gim web start....")
+	fmt.Printf("gim web start....")
 
 	if err = InitConfig(); err != nil {
-		l4g.Error("InitConfig() error(%v)", err)
+		fmt.Printf("InitConfig() error(%v)", err)
 		return
 	}
 	// Set max routine
@@ -32,11 +26,11 @@ func main() {
 	// sleep one second, let the listen start
 	time.Sleep(time.Second)
 	if err = common.InitProcess(Conf.User, Conf.Dir, Conf.PidFile); err != nil {
-		l4g.Error("common.InitProcess() error(%v)", err)
+		fmt.Printf("common.InitProcess() error(%v)", err)
 		return
 	}
 	// init signals, block wait signals
 	signalCH := common.InitSignal()
 	common.HandleSignal(signalCH)
-	l4g.Trace("gim web stop")
+	fmt.Printf("gim web stop")
 }

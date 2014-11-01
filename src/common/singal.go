@@ -1,7 +1,7 @@
 package common
 
 import (
-	l4g "log4go"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -19,7 +19,7 @@ func HandleSignal(c chan os.Signal) {
 	// Block until a signal is received.
 	for {
 		s := <-c
-		l4g.Trace("get a signal %s", s.String())
+		fmt.Printf("get a signal %s\n", s.String())
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGSTOP, syscall.SIGINT:
 			return

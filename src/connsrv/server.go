@@ -2,7 +2,7 @@ package main
 
 import (
 	"common"
-	l4g "log4go"
+	"fmt"
 	"net"
 	"time"
 )
@@ -61,7 +61,7 @@ func (self *Server) listen() {
 func (self *Server) join(conn net.Conn) {
 	guid, err := common.NewGuid(int64(time.Now().Second()))
 	if err != nil {
-		l4g.Error("new guid failed")
+		fmt.Printf("new guid failed")
 		self.quiting <- conn
 		return
 	}
@@ -69,19 +69,19 @@ func (self *Server) join(conn net.Conn) {
 	client := CreateClient(conn, guid)
 	self.clients.Set(conn, client)
 
-	l4g.Debug("new client join: \"%v\"", conn)
+	fmt.Printf("new client join: \"%v\"", conn)
 
 	//开一个gorouting处理这个客户端输入
 	go func() {
 		for {
 			msg := <-client.in
-			l4g.Debug("Got msg: %s from client id: %d", msg, client.GetId())
+			fmt.Printf("Got msg: %s from client id: %d", msg, client.GetId())
 
 			//处理消息
 			//parse msg
 			// HandleClientMsg(msg)
 			//暂时紧紧回返字符串
-			l4g.Trace("%s", msg)
+			fmt.Printf("%s", msg)
 			client.out <- msg
 		}
 	}()
@@ -90,7 +90,7 @@ func (self *Server) join(conn net.Conn) {
 	go func() {
 		for {
 			conn := <-client.quiting
-			l4g.Debug("client %d is quiting", client.GetId())
+			fmt.Printf("client %d is quiting", client.GetId())
 			self.quiting <- conn
 		}
 	}()
@@ -110,11 +110,11 @@ func (self *Server) Start() {
 	listener, err := net.Listen("tcp", Conf.TcpBind)
 	self.listener = listener
 	if err != nil {
-		l4g.Error("server %s listen failed", Conf.TcpBind)
+		fmt.Printf("server %s listen failed", Conf.TcpBind)
 		return
 	}
 
-	l4g.Debug("server %s start", Conf.TcpBind)
+	fmt.Printf("server %s start", Conf.TcpBind)
 
 	//预先生成指定连接数的token
 	for i := 0; i < Conf.MaxClients; i++ {
@@ -126,11 +126,11 @@ func (self *Server) Start() {
 			conn, err := self.listener.Accept()
 
 			if err != nil {
-				l4g.Error("server accept error : \"%v\"", err)
+				fmt.Printf("server accept error : \"%v\"", err)
 				return
 			}
 
-			l4g.Debug("new client connect: \"%v\"", conn)
+			fmt.Printf("new client connect: \"%v\"", conn)
 			self.TakeToken() //如果没有token了，会阻塞在这里
 			self.pending <- conn
 		}

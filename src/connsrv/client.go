@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	l4g "log4go"
+	"fmt"
 	"net"
 )
 
@@ -50,7 +50,7 @@ func (self *Client) Read() {
 		if line, _, err := self.reader.ReadLine(); err == nil {
 			self.in <- string(line) //放到每一个client输入chan，每一个客户端输入消息阻塞处理
 		} else {
-			l4g.Trace("client %d read error: \"%v\"", self.id, err)
+			fmt.Printf("client %d read error: \"%v\"", self.id, err)
 			self.quit()
 			return
 		}
