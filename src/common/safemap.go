@@ -46,7 +46,7 @@ func (self *SafeMap) Check(k interface{}) bool {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	if val, ok := self.sm[k]; !ok {
+	if _, ok := self.sm[k]; !ok {
 		return false
 	}
 
