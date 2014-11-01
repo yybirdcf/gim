@@ -62,6 +62,13 @@ func CreateServer() *Server {
 		}
 	}()
 
+	go func() {
+		for {
+			msg := server.sendcli.GetInMsg()
+			server.out <- msg
+		}
+	}()
+
 	server.listen()
 	return server
 }
