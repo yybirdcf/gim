@@ -9,10 +9,10 @@ type SafeMap struct {
 	sm   map[interface{}]interface{}
 }
 
-func NewSafeMap(sm map[interface{}]interface{}) *SafeMap {
+func NewSafeMap() *SafeMap {
 	return &SafeMap{
 		lock: new(sync.RWMutex),
-		sm:   sm,
+		sm:   make(map[interface{}]interface{}),
 	}
 }
 
