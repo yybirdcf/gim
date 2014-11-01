@@ -1,4 +1,4 @@
-package sendsrv
+package main
 
 type Config struct {
 	TcpBind    string

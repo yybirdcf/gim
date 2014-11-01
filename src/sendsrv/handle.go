@@ -1,4 +1,4 @@
-package sendsrv
+package main
 
 func HandleServerMsg(msg string) {
 

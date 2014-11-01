@@ -6,6 +6,7 @@ type Config struct {
 	User       string
 	Dir        string
 	MaxClients int
+	SendSrvTcp string
 }
 
 var (
@@ -19,6 +20,7 @@ func InitConfig() error {
 		User:       "nobody nobody",
 		Dir:        "./",
 		MaxClients: 50,
+		SendSrvTcp: "127.0.0.1:8380",
 	}
 
 	return nil

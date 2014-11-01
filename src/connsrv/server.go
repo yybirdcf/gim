@@ -4,6 +4,7 @@ import (
 	"common"
 	"fmt"
 	"net"
+	"sendsrv"
 	"time"
 )
 
@@ -16,6 +17,8 @@ type Server struct {
 	quiting  chan net.Conn
 	in       chan string
 	out      chan string
+	sendcli  *sendsrv.Client
+	tosend   chan string
 }
 
 //生成一个token，每一个token对应一个客户端
@@ -37,6 +40,26 @@ func CreateServer() *Server {
 		in:      make(chan string),
 		out:     make(chan string),
 	}
+
+	//创建一个连接sendsrv的客户端
+	guid, err := common.NewGuid(int64(time.Now().Second()))
+	if err != nil {
+		fmt.Printf("create send client, new guid failed")
+		return nil
+	}
+	conn, err := net.Dial("tcp", Conf.SendSrvTcp)
+	if err != nil {
+		fmt.Printf("send client, connect to %s failed\n", Conf.SendSrvTcp)
+		return nil
+	}
+	server.sendcli = sendsrv.CreateClient(conn, guid)
+
+	go func() {
+		for {
+			msg := <-self.tosend
+			server.sendcli.PutOutMsg(msg)
+		}
+	}()
 
 	server.listen()
 	return server
@@ -81,8 +104,9 @@ func (self *Server) join(conn net.Conn) {
 			//parse msg
 			// HandleClientMsg(msg)
 			//暂时紧紧回返字符串
-			fmt.Printf("%s", msg)
+			fmt.Printf("server print: %s", msg)
 			client.out <- msg
+			self.tosend <- msg
 		}
 	}()
 
