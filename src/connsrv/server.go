@@ -39,6 +39,7 @@ func CreateServer() *Server {
 		quiting: make(chan net.Conn),
 		in:      make(chan string),
 		out:     make(chan string),
+		tosend:  make(chan string),
 	}
 
 	//创建一个连接sendsrv的客户端
@@ -56,7 +57,7 @@ func CreateServer() *Server {
 
 	go func() {
 		for {
-			msg := <-self.tosend
+			msg := <-server.tosend
 			server.sendcli.PutOutMsg(msg)
 		}
 	}()
