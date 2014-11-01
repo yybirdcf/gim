@@ -69,13 +69,13 @@ func (self *Server) join(conn net.Conn) {
 	client := CreateClient(conn, guid)
 	self.clients.Set(conn, client)
 
-	l4g.Trace("new client join: \"%v\"", conn)
+	l4g.Debug("new client join: \"%v\"", conn)
 
 	//开一个gorouting处理这个客户端输入
 	go func() {
 		for {
 			msg := <-client.in
-			l4g.Trace("Got msg: %s from client id: %d", msg, client.GetId())
+			l4g.Debug("Got msg: %s from client id: %d", msg, client.GetId())
 
 			//处理消息
 			//parse msg
@@ -90,7 +90,7 @@ func (self *Server) join(conn net.Conn) {
 	go func() {
 		for {
 			conn := <-client.quiting
-			l4g.Trace("client %d is quiting", client.GetId())
+			l4g.Debug("client %d is quiting", client.GetId())
 			self.quiting <- conn
 		}
 	}()
@@ -114,7 +114,7 @@ func (self *Server) Start() {
 		return
 	}
 
-	l4g.Trace("server %s start", Conf.TcpBind)
+	l4g.Debug("server %s start", Conf.TcpBind)
 
 	//预先生成指定连接数的token
 	for i := 0; i < Conf.MaxClients; i++ {
@@ -130,7 +130,7 @@ func (self *Server) Start() {
 				return
 			}
 
-			l4g.Trace("new client connect: \"%v\"", conn)
+			l4g.Debug("new client connect: \"%v\"", conn)
 			self.TakeToken() //如果没有token了，会阻塞在这里
 			self.pending <- conn
 		}
