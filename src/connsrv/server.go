@@ -114,7 +114,7 @@ func (self *Server) Start() {
 		return
 	}
 
-	fmt.Printf("server %s start", Conf.TcpBind)
+	fmt.Printf("server %s start\n", Conf.TcpBind)
 
 	//预先生成指定连接数的token
 	for i := 0; i < Conf.MaxClients; i++ {

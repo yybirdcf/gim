@@ -35,6 +35,7 @@ func CreateClient(conn net.Conn, id int64) *Client {
 		id:     id,
 	}
 
+	client.Listen()
 	return client
 }
 
@@ -50,7 +51,7 @@ func (self *Client) Read() {
 		if line, _, err := self.reader.ReadLine(); err == nil {
 			self.in <- string(line) //放到每一个client输入chan，每一个客户端输入消息阻塞处理
 		} else {
-			fmt.Printf("client %d read error: \"%v\"", self.id, err)
+			fmt.Printf("client %d read error: \"%v\"\n", self.id, err)
 			self.quit()
 			return
 		}
