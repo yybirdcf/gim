@@ -30,7 +30,7 @@ func (self *Server) TakeToken() {
 
 func CreateServer() *Server {
 	server := &Server{
-		clients: common.NewSafeMap(map[net.Conn]*Client),
+		clients: common.NewSafeMap(make(map[net.Conn]*Client)),
 		tokens:  make(chan int),
 		pending: make(chan net.Conn),
 		quiting: make(chan net.Conn),
@@ -59,14 +59,14 @@ func (self *Server) listen() {
 
 //增加一个客户端
 func (self *Server) join(conn net.Conn) {
-	guid, err := common.NewGuid(time.Now().Second())
+	guid, err := common.NewGuid(int64(time.Now().Second()))
 	if err != nil {
 		glog.Errorf("new guid failed")
 		self.quiting <- conn
 		return
 	}
 
-	client := CreateClient(conn)
+	client := CreateClient(conn, guid)
 	self.clients.Set(conn, client)
 
 	glog.Infof("new client join: \"%v\"", conn)
@@ -104,7 +104,8 @@ func (self *Server) quit(conn net.Conn) {
 }
 
 func (self *Server) Start() {
-	self.listener, err = net.Listen("tcp", Conf.TcpBind)
+	listener, err := net.Listen("tcp", Conf.TcpBind)
+	self.listener = listener
 	if err != nil {
 		glog.Infof("server %s listen failed", Conf.TcpBind)
 		return

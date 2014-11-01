@@ -12,7 +12,7 @@ type SafeMap struct {
 func NewSafeMap(sm map[interface{}]interface{}) *SafeMap {
 	return &SafeMap{
 		lock: new(sync.RWMutex),
-		sm:   make(map[interface{}]interface{}),
+		sm:   sm,
 	}
 }
 
