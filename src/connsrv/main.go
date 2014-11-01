@@ -8,6 +8,12 @@ import (
 )
 
 func main() {
+	l4g.AddFilter("stdout", l4g.TRACE, l4g.NewConsoleLogWriter())
+	l4g.AddFilter("stdout", l4g.DEBUG, l4g.NewConsoleLogWriter())
+	l4g.AddFilter("stdout", l4g.ERROR, l4g.NewConsoleLogWriter())
+	l4g.LoadConfiguration("./connsrv_log.xml")
+	defer l4g.Close()
+
 	l4g.Trace("connect server start")
 
 	if err := InitConfig(); err != nil {
