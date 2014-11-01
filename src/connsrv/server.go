@@ -2,6 +2,7 @@ package main
 
 import (
 	"common"
+	"fmt"
 	"glog"
 	"net"
 	"time"
@@ -81,6 +82,7 @@ func (self *Server) join(conn net.Conn) {
 			//parse msg
 			// HandleClientMsg(msg)
 			//暂时紧紧回返字符串
+			fmt.Printf("%s", msg)
 			client.out <- msg
 		}
 	}()
