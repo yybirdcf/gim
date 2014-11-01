@@ -1,4 +1,4 @@
-HandleServerMsgpackage main
+package main
 
 import (
 	"bufio"
