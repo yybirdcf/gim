@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+	l4g.AddFilter("stdout", l4g.DEBUG, l4g.NewConsoleLogWriter())
 	l4g.LoadConfiguration("./web_log.xml")
 
 	var err error
