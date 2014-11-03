@@ -18,8 +18,8 @@ type Cis struct {
 	clientInfoMap *common.SafeMap
 }
 
-type Infomation struct {
-	start  int
+type Information struct {
+	start  int64
 	server string
 }
 
@@ -32,7 +32,7 @@ func NewCis() *Cis {
 }
 
 func (self *Cis) GetClient(args *Args, reply *string) error {
-	infomation := self.clientInfoMap.Get(args.id)
+	information := self.clientInfoMap.Get(args.id)
 	if information != nil {
 		*replay = information.server
 	}
@@ -44,7 +44,7 @@ func (self *Cis) GetClient(args *Args, reply *string) error {
 func (self *Cis) GetClients(args *Args, reply *map[int]string) error {
 	infos := make(map[int]string)
 	for id := range args.ids {
-		infomation := self.clientInfoMap.Get(id)
+		information := self.clientInfoMap.Get(id)
 		if information != nil {
 			infos[id] = information.server
 		}
@@ -55,7 +55,7 @@ func (self *Cis) GetClients(args *Args, reply *map[int]string) error {
 }
 
 func (self *Cis) SetClient(args *Args, reply *bool) error {
-	information := &Infomation{
+	information := &Information{
 		start:  time.Now().Unix(),
 		server: args.server,
 	}
