@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/rpc"
-	"sync"
 	"time"
 )
 
@@ -27,8 +26,6 @@ type Infomation struct {
 func NewCis() *Cis {
 	cis := &Cis{
 		clientInfoMap: common.NewSafeMap(),
-		total:         0,
-		lock:          new(sync.RWMutex),
 	}
 
 	return cis
