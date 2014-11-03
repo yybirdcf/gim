@@ -6,9 +6,9 @@ import (
 )
 
 type Args struct {
-	id     int
-	ids    []int
-	server string
+	Id     int
+	Ids    []int
+	Server string
 }
 
 func main() {
@@ -20,15 +20,15 @@ func main() {
 	}
 
 	args := Args{
-		id:     12345,
-		server: "127.0.0.1:8280",
-		ids:    []int{12345},
+		Id:     12345,
+		Server: "127.0.0.1:8280",
+		Ids:    []int{12345},
 	}
 
 	var reply_b bool
 	err = client.Call("Cis.SetClient", args, &reply_b)
 	if err != nil {
-		fmt.Printf("cis test, call Cis.SetClient failed\n")
+		fmt.Printf("cis test, call Cis.SetClient failed: %s\n", err.Error())
 		return
 	}
 
@@ -36,7 +36,7 @@ func main() {
 
 	err = client.Call("Cis.CheckClient", args, &reply_b)
 	if err != nil {
-		fmt.Printf("cis test, call Cis.CheckClient failed\n")
+		fmt.Printf("cis test, call Cis.CheckClient failed: %s\n", err.Error())
 		return
 	}
 
@@ -45,7 +45,7 @@ func main() {
 	var reply_str string
 	err = client.Call("Cis.GetClient", args, &reply_str)
 	if err != nil {
-		fmt.Printf("cis test, call Cis.GetClient failed\n")
+		fmt.Printf("cis test, call Cis.GetClient failed: %s\n", err.Error())
 		return
 	}
 
@@ -54,7 +54,7 @@ func main() {
 	var reply_m map[int]string
 	err = client.Call("Cis.GetClients", args, &reply_m)
 	if err != nil {
-		fmt.Printf("cis test, call Cis.GetClients failed\n")
+		fmt.Printf("cis test, call Cis.GetClients failed: %s\n", err.Error())
 		return
 	}
 
@@ -63,7 +63,7 @@ func main() {
 	var reply_i int
 	err = client.Call("Cis.GetTotal", args, &reply_i)
 	if err != nil {
-		fmt.Printf("cis test, call Cis.GetTotal failed\n")
+		fmt.Printf("cis test, call Cis.GetTotal failed: %s\n", err.Error())
 		return
 	}
 
@@ -71,7 +71,7 @@ func main() {
 
 	err = client.Call("Cis.DeleteClient", args, &reply_b)
 	if err != nil {
-		fmt.Printf("cis test, call Cis.DeleteClient failed\n")
+		fmt.Printf("cis test, call Cis.DeleteClient failed: %s\n", err.Error())
 		return
 	}
 

@@ -9,9 +9,9 @@ import (
 )
 
 type Args struct {
-	id     int
-	ids    []int
-	server string
+	Id     int
+	Ids    []int
+	Server string
 }
 
 type Cis struct {
@@ -32,7 +32,7 @@ func NewCis() *Cis {
 }
 
 func (self *Cis) GetClient(args *Args, reply *string) error {
-	information := self.clientInfoMap.Get(args.id)
+	information := self.clientInfoMap.Get(args.Id)
 	if information != nil {
 		if info, ok := information.(Information); ok {
 			*reply = info.server
@@ -44,7 +44,7 @@ func (self *Cis) GetClient(args *Args, reply *string) error {
 
 func (self *Cis) GetClients(args *Args, reply *map[int]string) error {
 	infos := make(map[int]string)
-	for id := range args.ids {
+	for id := range args.Ids {
 		information := self.clientInfoMap.Get(id)
 		if information != nil {
 			if info, ok := information.(Information); ok {
@@ -60,15 +60,15 @@ func (self *Cis) GetClients(args *Args, reply *map[int]string) error {
 func (self *Cis) SetClient(args *Args, reply *bool) error {
 	information := &Information{
 		start:  time.Now().Unix(),
-		server: args.server,
+		server: args.Server,
 	}
-	ok := self.clientInfoMap.Set(args.id, &information)
+	ok := self.clientInfoMap.Set(args.Id, &information)
 	*reply = ok
 	return nil
 }
 
 func (self *Cis) CheckClient(args *Args, reply *bool) error {
-	ok := self.clientInfoMap.Check(args.id)
+	ok := self.clientInfoMap.Check(args.Id)
 	*reply = ok
 	return nil
 }
@@ -80,7 +80,7 @@ func (self *Cis) GetTotal(args *Args, reply *int) error {
 
 func (self *Cis) DeleteClient(args *Args, reply *bool) error {
 	*reply = true
-	self.clientInfoMap.Delete(args.id)
+	self.clientInfoMap.Delete(args.Id)
 	return nil
 }
 
