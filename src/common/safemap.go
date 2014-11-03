@@ -59,3 +59,7 @@ func (self *SafeMap) Delete(k interface{}) {
 
 	delete(self.sm, k)
 }
+
+func (self *SafeMap) Len() int {
+	return len(self.sm)
+}
