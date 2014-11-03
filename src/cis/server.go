@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/rpc"
-	"os"
 	"sync"
+	"time"
 )
 
 type Args struct {
@@ -16,7 +16,7 @@ type Args struct {
 }
 
 type Cis struct {
-	clientInfoMap *SafeMap
+	clientInfoMap *common.SafeMap
 }
 
 type Infomation struct {
@@ -58,8 +58,11 @@ func (self *Cis) GetClients(args *Args, reply *map[int]string) error {
 }
 
 func (self *Cis) SetClient(args *Args, reply *bool) error {
-	ok := self.clientInfoMap.Check(args.id)
-	ok := self.clientInfoMap.Set(args.id, args.server)
+	information := &Infomation{
+		start:  time.Now().Unix(),
+		server: args.server,
+	}
+	ok := self.clientInfoMap.Set(args.id, &information)
 	*replay = ok
 	return nil
 }
