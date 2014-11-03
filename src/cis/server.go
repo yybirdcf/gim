@@ -35,7 +35,7 @@ func NewCis() *Cis {
 func (self *Cis) GetClient(args *Args, reply *string) error {
 	information := self.clientInfoMap.Get(args.id)
 	if information != nil {
-		info = (* Information)unsafe.Pointer(information)
+		info := (* Information)unsafe.Pointer(information)
 		*reply = info.server
 	}
 
@@ -48,7 +48,7 @@ func (self *Cis) GetClients(args *Args, reply *map[int]string) error {
 	for id := range args.ids {
 		information := self.clientInfoMap.Get(id)
 		if information != nil {
-			info = (* Information)unsafe.Pointer(information)
+			info := (* Information)unsafe.Pointer(information)
 			infos[id] = info.server
 		}
 	}
