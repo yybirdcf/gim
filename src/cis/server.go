@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/rpc"
 	"time"
-	"unsafe"
 )
 
 type Args struct {
@@ -35,11 +34,11 @@ func NewCis() *Cis {
 func (self *Cis) GetClient(args *Args, reply *string) error {
 	information := self.clientInfoMap.Get(args.id)
 	if information != nil {
-		info := (* Information)unsafe.Pointer(information);
-		*reply = info.server
+		if info, ok := information.(Information); ok {
+			*reply = info.server
+		}
 	}
 
-	*reply = nil
 	return nil
 }
 
@@ -48,8 +47,9 @@ func (self *Cis) GetClients(args *Args, reply *map[int]string) error {
 	for id := range args.ids {
 		information := self.clientInfoMap.Get(id)
 		if information != nil {
-			info := (* Information)unsafe.Pointer(information);
-			infos[id] = info.server
+			if info, ok := information.(Information); ok {
+				infos[id] = info.server
+			}
 		}
 	}
 
