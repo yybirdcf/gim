@@ -18,11 +18,6 @@ type Cis struct {
 	clientInfoMap *common.SafeMap
 }
 
-type Information struct {
-	start  int64
-	server string
-}
-
 func NewCis() *Cis {
 	cis := &Cis{
 		clientInfoMap: common.NewSafeMap(),
@@ -32,10 +27,10 @@ func NewCis() *Cis {
 }
 
 func (self *Cis) GetClient(args *Args, reply *string) error {
-	information := self.clientInfoMap.Get(args.Id)
-	if information != nil {
-		if info, ok := information.(Information); ok {
-			*reply = info.server
+	server := self.clientInfoMap.Get(args.Id)
+	if server != nil {
+		if s, ok := server.(string); ok {
+			*reply = s
 		}
 	}
 
@@ -45,24 +40,20 @@ func (self *Cis) GetClient(args *Args, reply *string) error {
 func (self *Cis) GetClients(args *Args, reply *map[int]string) error {
 	infos := make(map[int]string)
 	for id := range args.Ids {
-		information := self.clientInfoMap.Get(id)
-		if information != nil {
-			if info, ok := information.(Information); ok {
-				infos[id] = info.server
+		server := self.clientInfoMap.Get(id)
+		if server != nil {
+			if s, ok := server.(string); ok {
+				infos[id] = s
 			}
 		}
 	}
 
-	reply = &infos
+	*reply = infos
 	return nil
 }
 
 func (self *Cis) SetClient(args *Args, reply *bool) error {
-	information := &Information{
-		start:  time.Now().Unix(),
-		server: args.Server,
-	}
-	ok := self.clientInfoMap.Set(args.Id, &information)
+	ok := self.clientInfoMap.Set(args.Id, args.Server)
 	*reply = ok
 	return nil
 }
