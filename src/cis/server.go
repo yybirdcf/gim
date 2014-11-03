@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/rpc"
-	"time"
 )
 
 type Args struct {
@@ -39,7 +38,7 @@ func (self *Cis) GetClient(args *Args, reply *string) error {
 
 func (self *Cis) GetClients(args *Args, reply *map[int]string) error {
 	infos := make(map[int]string)
-	for id := range args.Ids {
+	for _, id := range args.Ids {
 		server := self.clientInfoMap.Get(id)
 		if server != nil {
 			if s, ok := server.(string); ok {
@@ -76,7 +75,7 @@ func (self *Cis) DeleteClient(args *Args, reply *bool) error {
 }
 
 func StartCis() {
-	cis := new(Cis)
+	cis := NewCis()
 	rpc.Register(cis)
 	rpc.HandleHTTP()
 
