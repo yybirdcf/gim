@@ -24,7 +24,7 @@ func NewMysqlStore() *MysqlStore {
 }
 
 func (self *MysqlStore) Read(to int, maxId int64, limit int) []*Message {
-	rows, err := self.db.Query("SELECT * FROM message WHERE to=? AND id>? ORDER BY id ASC LIMIT "+strconv.Itoa(limit), to, maxId)
+	rows, err := self.db.Query("SELECT * FROM message WHERE msg_to=? AND msg_id>? ORDER BY id ASC LIMIT "+strconv.Itoa(limit), to, maxId)
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
 		panic(err.Error())
@@ -62,7 +62,7 @@ func (self *MysqlStore) Read(to int, maxId int64, limit int) []*Message {
 }
 
 func (self *MysqlStore) Save(m *Message) bool {
-	stmt, err := self.db.Prepare("INSERT INTO message (id, msg, type, time, from, to) VALUES (?, ?, ?, ?, ?, ?)")
+	stmt, err := self.db.Prepare("INSERT INTO message (msg_id, msg_content, msg_type, msg_time, msg_from, msg_to) VALUES (?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
 		panic(err.Error())
