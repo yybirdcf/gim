@@ -1,7 +1,6 @@
 package main
 
 import (
-	"common"
 	"fmt"
 	"net/http"
 	"net/rpc"
@@ -62,7 +61,7 @@ func (self *MS) SaveMessage(args *WArgs, reply *bool) error {
 	}
 	self.buf <- m
 
-	*bool = true
+	*reply = true
 	return nil
 }
 

@@ -2,7 +2,7 @@ package main
 
 import (
 	"database/sql"
-	"mysql"
+	_ "mysql"
 	"strconv"
 )
 
@@ -11,7 +11,7 @@ type MysqlStore struct {
 	db  *sql.DB
 }
 
-func NewMysqlStore(dsn string) *MysqlStore {
+func NewStore(dsn string) *MysqlStore {
 	mysqlStore := &MysqlStore{
 		dsn: dsn,
 	}
