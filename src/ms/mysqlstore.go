@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	_ "mysql"
 	"strconv"
 )
@@ -70,6 +71,9 @@ func (self *MysqlStore) Save(m *Message) bool {
 		panic(err.Error())
 		return false
 	}
+
+	affect, err := res.RowsAffected()
+	fmt.Printf("rows affect %d\n", affect)
 	return true
 }
 
