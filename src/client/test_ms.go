@@ -54,14 +54,20 @@ func main() {
 		return
 	}
 
-	var reply_messages []*Message
-	err = client.Call("MS.ReadMessages", args, &reply_messages)
+	args2 := RArgs{
+		To:    2,
+		MaxId: 0,
+		Limit: 10,
+	}
+	var reply_messages *bool
+	err = client.Call("MS.ReadMessages", args2, &reply_messages)
 	if err != nil {
 		fmt.Printf("MS test, call MS.ReadMessages failed: %s\n", err.Error())
 		return
 	}
 
-	for m := range reply_messages {
-		fmt.Printf("%v\n", m)
-	}
+	fmt.Printf("ok\n")
+	// for m := range reply_messages {
+	// 	fmt.Printf("%v\n", m)
+	// }
 }
