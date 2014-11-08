@@ -7,16 +7,13 @@ import (
 )
 
 type MysqlStore struct {
-	dsn string
-	db  *sql.DB
+	db *sql.DB
 }
 
-func NewStore(dsn string) *MysqlStore {
-	mysqlStore := &MysqlStore{
-		dsn: dsn,
-	}
+func NewMysqlStore() *MysqlStore {
+	mysqlStore := &MysqlStore{}
 
-	db, err := sql.Open("mysql", dsn)
+	db, err := sql.Open("mysql", Conf.Dsn)
 	if err != nil {
 		panic(err.Error())
 	}

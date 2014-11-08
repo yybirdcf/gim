@@ -22,22 +22,22 @@ type RArgs struct {
 }
 
 type MS struct {
-	store *Store
-	buf   chan *Message
+	buf chan *Message
 }
 
 func NewMS() *MS {
 
 	ms := &MS{
-		store: NewStore(Conf.Dsn),
-		buf:   make(chan *Message, 1024),
+		buf: make(chan *Message, 1024),
 	}
+
+	InitStore()
 
 	go func() {
 		for {
 			m := <-ms.buf
 			if m != nil {
-				b := ms.store.Save(m)
+				b := store.Save(m)
 				if b {
 					fmt.Printf("save message success: %v", m)
 				} else {
@@ -66,7 +66,7 @@ func (self *MS) SaveMessage(args *WArgs, reply *bool) error {
 }
 
 func (self *MS) ReadMessages(args *RArgs, reply *[]*Message) error {
-	*reply = self.store.Read(args.To, args.MaxId, args.Limit)
+	*reply = store.Read(args.To, args.MaxId, args.Limit)
 
 	return nil
 }
