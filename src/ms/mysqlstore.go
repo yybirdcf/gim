@@ -31,7 +31,7 @@ func (self *MysqlStore) Read(to int, maxId int64, limit int) []Message {
 	}
 	defer rows.Close()
 
-	ms := make([]*Message, limit)
+	ms := make([]Message, limit)
 	i := 0
 	for rows.Next() {
 		var (
