@@ -67,7 +67,7 @@ func main() {
 	}
 
 	fmt.Printf("ok\n")
-	for m := range reply_messages {
+	for _, m := range reply_messages {
 		fmt.Printf("%v\n", m)
 	}
 }
