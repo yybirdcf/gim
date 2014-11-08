@@ -20,7 +20,7 @@ func InitConfig() error {
 		User:     "nobody nobody",
 		Dir:      "./",
 		Store:    "mysql",
-		Dsn:      "root:1160616612@tcp(127.0.0.1:3006)/chat?charset=utf8",
+		Dsn:      "root:1160616612@tcp(127.0.0.1:3306)/chat?charset=utf8",
 	}
 
 	return nil
