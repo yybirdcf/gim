@@ -65,9 +65,9 @@ func (self *MS) SaveMessage(args *WArgs, reply *bool) error {
 	return nil
 }
 
-func (self *MS) ReadMessages(args *RArgs, reply *bool) error {
-	store.Read(args.To, args.MaxId, args.Limit)
-	*reply = true
+func (self *MS) ReadMessages(args *RArgs, reply *[]Message) error {
+	*reply = store.Read(args.To, args.MaxId, args.Limit)
+
 	return nil
 }
 
