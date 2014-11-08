@@ -23,7 +23,7 @@ func NewMysqlStore() *MysqlStore {
 	return mysqlStore
 }
 
-func (self *MysqlStore) Read(to int, maxId int64, limit int) *[]Message {
+func (self *MysqlStore) Read(to int, maxId int64, limit int) []Message {
 	rows, err := self.db.Query("SELECT * FROM message WHERE msg_to=? AND msg_id>? ORDER BY msg_id ASC LIMIT "+strconv.Itoa(limit), to, maxId)
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
