@@ -23,7 +23,7 @@ var (
 
 type Store interface {
 	Save(m *Message) bool
-	Read(to int, maxId int64, limit int) []*Message
+	Read(to int, maxId int64, limit int) []Message
 }
 
 func InitStore() error {
