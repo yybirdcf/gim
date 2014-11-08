@@ -29,7 +29,7 @@ type MS struct {
 func NewMS() *MS {
 
 	ms := &MS{
-		store: NewMysqlStore(Conf.Dsn),
+		store: NewStore(Conf.Dsn),
 		buf:   make(chan *Message, 1024),
 	}
 
