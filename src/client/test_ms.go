@@ -39,7 +39,7 @@ func main() {
 	}
 
 	args := WArgs{
-		Id:   1001,
+		Id:   time.Now().Unix(),
 		Msg:  "message from 1 to 2",
 		Type: 1,
 		Time: time.Now().Unix(),
