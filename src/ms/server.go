@@ -67,10 +67,7 @@ func (self *MS) SaveMessage(args *WArgs, reply *bool) error {
 
 func (self *MS) ReadMessages(args *RArgs, reply *[]Message) error {
 	msgs := store.Read(args.To, args.MaxId, args.Limit)
-	for _, m := range msgs {
-		fmt.Printf("%v\n", m)
-	}
-	// *reply = *msgs
+	*reply = msgs
 	return nil
 }
 
