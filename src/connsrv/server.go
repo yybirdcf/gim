@@ -4,9 +4,19 @@ import (
 	"common"
 	"fmt"
 	"net"
+	"net/rpc"
 	"sendsrv"
 	"time"
 )
+
+type Message struct {
+	Id   int64
+	Msg  string
+	Type int
+	Time int64
+	From int
+	To   int
+}
 
 //定义服务器结构
 type Server struct {
@@ -15,10 +25,29 @@ type Server struct {
 	tokens   chan int //令牌，确保服务器同时服务的客户端数量一定
 	pending  chan net.Conn
 	quiting  chan net.Conn
-	in       chan string
+	in       chan *Message
 	out      chan string
-	sendcli  *sendsrv.Client
-	tosend   chan string
+}
+
+type Args struct {
+	Id   int64
+	Msg  string
+	Type int
+	Time int64
+	From int
+	To   int
+}
+
+//push server 调用的rpc服务，负责推送消息
+func (self *Server) SendMsg(args *Args, reply *bool) error {
+	self.in <- &Message{
+		Id:   args.Id,
+		Msg:  args.Msg,
+		Type: args.Type,
+		Time: args.Time,
+		From: args.From,
+		To:   args.To,
+	}
 }
 
 //生成一个token，每一个token对应一个客户端
@@ -37,37 +66,9 @@ func CreateServer() *Server {
 		tokens:  make(chan int, Conf.MaxClients),
 		pending: make(chan net.Conn),
 		quiting: make(chan net.Conn),
-		in:      make(chan string),
+		in:      make(chan *Message),
 		out:     make(chan string),
-		tosend:  make(chan string),
 	}
-
-	//创建一个连接sendsrv的客户端
-	guid, err := common.NewGuid(int64(time.Now().Second()))
-	if err != nil {
-		fmt.Printf("create send client, new guid failed")
-		return nil
-	}
-	conn, err := net.Dial("tcp", Conf.SendSrvTcp)
-	if err != nil {
-		fmt.Printf("send client, connect to %s failed\n", Conf.SendSrvTcp)
-		return nil
-	}
-	server.sendcli = sendsrv.CreateClient(conn, guid)
-
-	go func() {
-		for {
-			msg := <-server.tosend
-			server.sendcli.PutOutMsg(msg)
-		}
-	}()
-
-	go func() {
-		for {
-			msg := server.sendcli.GetInMsg()
-			server.out <- msg
-		}
-	}()
 
 	server.listen()
 	return server
@@ -78,7 +79,12 @@ func (self *Server) listen() {
 		for {
 			select {
 			case msg := <-self.in:
-				HandleServerMsg(msg) //新消息处理
+				//新消息处理
+				//获取客户端
+				client := self.clients.Get(msg.To)
+				if client != nil {
+					client.out <- msg
+				}
 			case conn := <-self.pending:
 				self.join(conn) //新客户端处理
 			case conn := <-self.quiting:
@@ -101,22 +107,6 @@ func (self *Server) join(conn net.Conn) {
 	self.clients.Set(conn, client)
 
 	fmt.Printf("new client join: \"%v\"", conn)
-
-	//开一个gorouting处理这个客户端输入
-	go func() {
-		for {
-			msg := <-client.in
-			fmt.Printf("Got msg: %s from client id: %d", msg, client.GetId())
-
-			//处理消息
-			//parse msg
-			// HandleClientMsg(msg)
-			//暂时紧紧回返字符串
-			fmt.Printf("server print: %s", msg)
-			client.out <- msg
-			self.tosend <- msg
-		}
-	}()
 
 	//开一个gorouting处理客户端退出
 	go func() {
@@ -171,11 +161,18 @@ func (self *Server) Start() {
 	}()
 }
 
+func (self *Server) StartRpc() {
+	go func() {
+		rpc.Register(self)
+		rpc.HandleHTTP()
+
+		err := http.ListenAndServe(Conf.RcpBind, nil)
+		if err != nil {
+			fmt.Printf("connect server rpc error: %s\n", err.Error())
+		}
+	}()
+}
+
 func (self *Server) Stop() {
-	close(self.tokens)
-	close(self.pending)
-	close(self.quiting)
-	close(self.in)
-	close(self.out)
 	self.listener.Close()
 }

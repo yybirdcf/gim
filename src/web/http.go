@@ -18,6 +18,7 @@ func StartHTTP() {
 	httpServeMux := http.NewServeMux()
 	// 1.0
 	httpServeMux.HandleFunc("/server/test", TestServer)
+	httpServeMux.HandleFunc("/client/dispatch", ClientDispatch)
 
 	for _, bind := range Conf.HttpBind {
 		fmt.Printf("start http listen addr:\"%s\"", bind)

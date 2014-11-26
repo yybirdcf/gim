@@ -7,6 +7,7 @@ type Config struct {
 	Dir        string
 	MaxClients int
 	SendSrvTcp string
+	RcpBind    string
 }
 
 var (
@@ -21,6 +22,7 @@ func InitConfig() error {
 		Dir:        "./",
 		MaxClients: 50,
 		SendSrvTcp: "127.0.0.1:8380",
+		RcpBind:    "127.0.0.1:8285",
 	}
 
 	return nil

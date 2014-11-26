@@ -50,6 +50,7 @@ func NewMS() *MS {
 	return ms
 }
 
+//保存消息调用
 func (self *MS) SaveMessage(args *WArgs, reply *bool) error {
 	m := &Message{
 		Id:   args.Id,
@@ -65,9 +66,49 @@ func (self *MS) SaveMessage(args *WArgs, reply *bool) error {
 	return nil
 }
 
+//获取消息调用
 func (self *MS) ReadMessages(args *RArgs, reply *[]Message) error {
 	msgs := store.Read(args.To, args.MaxId, args.Limit)
 	*reply = msgs
+	return nil
+}
+
+type UserArgs struct {
+	id    int
+	token string
+}
+
+//获取用户调用
+func (self *MS) GetUser(args *UserArgs, reply *bool) error {
+	*reply = store.IsUserValid(args.id, args.token)
+	return nil
+}
+
+type ClientArgs struct {
+	guid    string
+	connSrv string
+	userId  int
+}
+
+//申请客户端，新增client information
+func (self *MS) NewClientInformation(args *ClientArgs, reply *bool) error {
+	*reply = store.NewClientInfomation(args.guid, args.connSrv, args.userId)
+	return nil
+}
+
+type ClientSim struct {
+	guid string
+}
+
+//删除客户端申请信息
+func (self *MS) DeleteClientInfomation(args *ClientSim, reply *bool) error {
+	*reply = store.DeleteClientInformation(args.guid)
+	return nil
+}
+
+//激活客户端
+func (self *MS) ActiveClientInfomation(args *ClientArgs, reply *bool) error {
+	*reply = store.ActiveClientInformation(args.guid, args.connSrv, args.userId)
 	return nil
 }
 

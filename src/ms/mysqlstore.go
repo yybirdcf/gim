@@ -5,6 +5,7 @@ import (
 	"fmt"
 	_ "mysql"
 	"strconv"
+	"time"
 )
 
 type MysqlStore struct {
@@ -82,4 +83,76 @@ func (self *MysqlStore) Save(m *Message) bool {
 
 func (self *MysqlStore) Close() {
 	self.db.Close()
+}
+
+func (self *MysqlStore) IsUserValid(id int, token string) bool {
+	row, err := self.db.QueryRow("SELECT * FROM User WHERE id=? AND token=? LIMIT 1", id, token)
+	defer row.Close()
+	if err != nil && err == sql.ErrNoRows {
+		return false
+	} else if err != nil {
+		fmt.Printf("%s\n", err.Error())
+		panic(err.Error())
+	} else {
+		return true
+	}
+}
+
+func (self *MysqlStore) NewClientInfomation(guid string, connSrv string, userId int) bool {
+	stmt, err := self.db.Prepare("INSERT INTO client_information (guid, connSrv, genTime, userId) VALUES (?, ?, ?, ?)")
+	if err != nil {
+		fmt.Printf("%s\n", err.Error())
+		panic(err.Error())
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(guid, connSrv, time.Now().Unix(), userId)
+	if err != nil {
+		fmt.Printf("%s\n", err.Error())
+		panic(err.Error())
+		return false
+	}
+
+	affect, err := res.RowsAffected()
+	fmt.Printf("rows affect %d\n", affect)
+	return true
+}
+
+func (self *MysqlStore) DeleteClientInformation(guid string) bool {
+	stmt, err := self.db.Prepare("DELETE FROM client_information WHERE guid=?")
+	defer stmt.Close()
+	if err != nil {
+		fmt.Printf("%s\n", err.Error())
+		panic(err.Error())
+	}
+
+	res, err := stmt.Exec(guid)
+	if err != nil {
+		fmt.Printf("%s\n", err.Error())
+		panic(err.Error())
+	}
+
+	return true
+}
+
+func (self *MysqlStore) ActiveClientInformation(guid string, connSrv string, userId int) bool {
+	stmt, err := self.db.Prepare("UPDATE client_information SET status=1 WHERE guid=? AND userId=? AND connSrv=?")
+
+	defer stmt.Close()
+	if err != nil {
+		fmt.Printf("%s\n", err.Error())
+		panic(err.Error())
+	}
+
+	res, err := stmt.Exec(guid, userId, connSrv)
+	if err != nil {
+		fmt.Printf("%s\n", err.Error())
+		panic(err.Error())
+	}
+
+	rowCnt, err := res.RowsAffected()
+	if rowCnt > 0 {
+		return true
+	}
+	return false
 }

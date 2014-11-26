@@ -5,6 +5,7 @@ type Config struct {
 	PidFile  string
 	User     string
 	Dir      string
+	MS       string
 }
 
 var (
@@ -17,6 +18,7 @@ func InitConfig() error {
 		PidFile:  "/tmp/gim-web.pid",
 		User:     "nobody nobody",
 		Dir:      "./",
+		MS:       "127.0.0.1:8680",
 	}
 
 	return nil
