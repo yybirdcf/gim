@@ -40,9 +40,9 @@ func SendPublicMsg(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//调用send srv rpc将消息发过去
-	reply bool
+	var reply bool
 	err := sendSrvClient.Call("SendSrv.SendMsg", m, &reply)
-	if err != nil || !reply{
+	if err != nil || !reply {
 		retJson(w, r, -1, "发送消息失败", nil)
 		return
 	}
@@ -57,7 +57,7 @@ func SendSubMsg(w http.ResponseWriter, r *http.Request) {
 	msg := r.Form.Get("msg")
 	from := r.Form.Get("from")
 	to := r.Form.Get("to")
-	if msg == nil || subId == nil || from == nil || to == nil{
+	if msg == nil || subId == nil || from == nil || to == nil {
 		retJson(w, r, -1, "缺少参数", nil)
 		return
 	}
@@ -75,9 +75,9 @@ func SendSubMsg(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//调用send srv rpc将消息发过去
-	reply bool
+	var reply bool
 	err := sendSrvClient.Call("SendSrv.SendMsg", m, &reply)
-	if err != nil || !reply{
+	if err != nil || !reply {
 		retJson(w, r, -1, "发送消息失败", nil)
 		return
 	}
