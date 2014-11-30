@@ -16,7 +16,7 @@ type GroupArgs struct {
 
 //获取用户分配的消息id
 func getUserMsgId(userId int) int {
-	maxId, _ := redClient.Incr(USER_MAX_MSGID_PREFIX + userId)
+	maxId, _ := redClient.Do("INCR", USER_MAX_MSGID_PREFIX+userId)
 	return maxId
 }
 

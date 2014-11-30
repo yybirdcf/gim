@@ -3,7 +3,7 @@ package main
 import (
 	"common"
 	"fmt"
-	"github.com/astaxie/goredis"
+	"github.com/garyburd/redigo/redis"
 	"net/http"
 	"net/rpc"
 	"sync"
@@ -11,7 +11,7 @@ import (
 
 var (
 	msClient      *rpc.Client
-	redClient     goredis.Client
+	redClient     Conn
 	pushSrvClient *rpc.Client
 )
 
@@ -50,7 +50,8 @@ func NewSendSrv() *SendSrv {
 	}
 	pushSrvClient = client
 
-	redClient.Addr = Conf.Redis
+	conn, _ := redis.Dial("tcp", Conf.Redis)
+	redClient = conn
 	go func() {
 		for {
 			if m := <-msgPool; m != nil {
