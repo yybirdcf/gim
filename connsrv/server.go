@@ -6,6 +6,7 @@ import (
 	"gim/common"
 	"github.com/garyburd/redigo/redis"
 	"net"
+	"net/http"
 	"net/rpc"
 	"strconv"
 	"sync"
@@ -80,9 +81,10 @@ func (self *Server) listen() {
 					resp.retData = *msg
 
 					client.lastAccTime = int(time.Now().Unix())
-					client.out <- string(json.Marshal(resp))
+					str, _ := json.Marshal(resp)
+					client.out <- string(str)
 				}
-			case msg := self.out:
+			case msg := <-self.out:
 				//客户端需要发出去的消息
 				//rpc发送给send srv
 				var reply bool
@@ -131,7 +133,7 @@ func (self *Server) quit(client *Client) {
 		self.lock.Unlock()
 
 		//删除客户端在线信息
-		redClient.Del(USER_ONLINE_PREFIX + strconv.Itoa(client.id))
+		redClient.Do("DEL", USER_ONLINE_PREFIX+strconv.Itoa(client.id))
 
 		//如果客户端没有激活，需要关闭激活goroute
 		client.activating <- nil
@@ -154,7 +156,9 @@ func (self *Server) activate(client *Client) {
 		//激活的客户端开启goroute处理客户端发出的消息
 		go func() {
 			for {
-				self.out <- client.in
+				if msg := <-client.in; msg != nil {
+					self.out <- msg
+				}
 			}
 		}()
 	}
