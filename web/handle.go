@@ -1,7 +1,7 @@
 package main
 
 import (
-	"common"
+	"gim/common"
 	"math/rand"
 	"net/http"
 	"time"
