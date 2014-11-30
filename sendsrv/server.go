@@ -6,12 +6,11 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"net/http"
 	"net/rpc"
-	"sync"
 )
 
 var (
 	msClient      *rpc.Client
-	redClient     Conn
+	redClient     redis.Conn
 	pushSrvClient *rpc.Client
 )
 
@@ -44,11 +43,11 @@ func NewSendSrv() *SendSrv {
 	}
 	msClient = client
 
-	client, err := rpc.DialHTTP("tcp", Conf.PushSrv)
+	pclient, err := rpc.DialHTTP("tcp", Conf.PushSrv)
 	if err != nil {
 		panic(err.Error())
 	}
-	pushSrvClient = client
+	pushSrvClient = pclient
 
 	conn, _ := redis.Dial("tcp", Conf.Redis)
 	redClient = conn

@@ -1,9 +1,8 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"gim/common"
+	"strconv"
 )
 
 const (
@@ -16,7 +15,7 @@ type GroupArgs struct {
 
 //获取用户分配的消息id
 func getUserMsgId(userId int) int {
-	maxId, _ := redClient.Do("INCR", USER_MAX_MSGID_PREFIX+userId)
+	maxId, _ := redClient.Do("INCR", USER_MAX_MSGID_PREFIX+strconv.Itoa(userId))
 	return maxId
 }
 
@@ -26,7 +25,7 @@ func HandleServerMsg(ss *SendSrv, msg *common.Message) {
 	if msg.Type == common.MESSAGE_TYPE_USER {
 		//获取发送者消息空间ID
 		senderMaxId := getUserMsgId(msg.From)
-		mFrom := Message{
+		mFrom := common.Message{
 			Mid:     senderMaxId,
 			Uid:     msg.From,
 			Content: msg.Msg,
@@ -38,7 +37,7 @@ func HandleServerMsg(ss *SendSrv, msg *common.Message) {
 		}
 		//获取接收者消息空间ID
 		recMaxId := getUserMsgId(msg.To)
-		mTo := Message{
+		mTo := common.Message{
 			Mid:     recMaxId,
 			Uid:     msg.To,
 			Content: msg.Msg,
@@ -62,14 +61,14 @@ func HandleServerMsg(ss *SendSrv, msg *common.Message) {
 			groupId: msg.Group,
 		}
 		members := make([]int, 100)
-		err = msClient.Call("MS.GetGroupMembers", args, &members)
+		err := msClient.Call("MS.GetGroupMembers", args, &members)
 		if err != nil || len(members) == 0 {
 			return
 		}
 
 		//获取发送者消息空间ID
 		senderMaxId := getUserMsgId(msg.From)
-		mFrom := Message{
+		mFrom := common.Message{
 			Mid:     senderMaxId,
 			Uid:     msg.From,
 			Content: msg.Msg,
@@ -83,7 +82,7 @@ func HandleServerMsg(ss *SendSrv, msg *common.Message) {
 		for i := 0; i < len(members); i++ {
 			//获取接收者消息空间ID
 			recMaxId := getUserMsgId(members[i])
-			mTo := Message{
+			mTo := common.Message{
 				Mid:     recMaxId,
 				Uid:     members[i],
 				Content: msg.Msg,
