@@ -53,7 +53,7 @@ func NewSendSrv() *SendSrv {
 	redClient = conn
 	go func() {
 		for {
-			if m := <-msgPool; m != nil {
+			if m := <-ss.msgPool; m != nil {
 				//MS落地存储
 				var success bool
 				err = msClient.Call("MS.SaveMessage", *m, &success)
@@ -64,10 +64,10 @@ func NewSendSrv() *SendSrv {
 		}
 	}()
 
-	return ms
+	return ss
 }
 
-func (self *SendSrv) SendMsg(msg *common.Message, reply *bool) error {
+func (self *SendSrv) SendMsg(m *common.Message, reply *bool) error {
 	if m != nil {
 		self.buf <- m
 	}

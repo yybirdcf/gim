@@ -16,7 +16,11 @@ type GroupArgs struct {
 //获取用户分配的消息id
 func getUserMsgId(userId int) int {
 	maxId, _ := redClient.Do("INCR", USER_MAX_MSGID_PREFIX+strconv.Itoa(userId))
-	return maxId
+	val, ok := maxId.(int)
+	if ok {
+		return val
+	}
+	return 0
 }
 
 //发过来消息字符串
@@ -28,7 +32,7 @@ func HandleServerMsg(ss *SendSrv, msg *common.Message) {
 		mFrom := common.Message{
 			Mid:     senderMaxId,
 			Uid:     msg.From,
-			Content: msg.Msg,
+			Content: msg.Content,
 			Type:    msg.Type,
 			Time:    msg.Time,
 			From:    msg.From,
@@ -40,7 +44,7 @@ func HandleServerMsg(ss *SendSrv, msg *common.Message) {
 		mTo := common.Message{
 			Mid:     recMaxId,
 			Uid:     msg.To,
-			Content: msg.Msg,
+			Content: msg.Content,
 			Type:    msg.Type,
 			Time:    msg.Time,
 			From:    msg.From,
@@ -71,7 +75,7 @@ func HandleServerMsg(ss *SendSrv, msg *common.Message) {
 		mFrom := common.Message{
 			Mid:     senderMaxId,
 			Uid:     msg.From,
-			Content: msg.Msg,
+			Content: msg.Content,
 			Type:    msg.Type,
 			Time:    msg.Time,
 			From:    msg.From,
@@ -85,7 +89,7 @@ func HandleServerMsg(ss *SendSrv, msg *common.Message) {
 			mTo := common.Message{
 				Mid:     recMaxId,
 				Uid:     members[i],
-				Content: msg.Msg,
+				Content: msg.Content,
 				Type:    msg.Type,
 				Time:    msg.Time,
 				From:    msg.From,
@@ -104,7 +108,7 @@ func HandleServerMsg(ss *SendSrv, msg *common.Message) {
 
 		//接收者消息发送给目的地push srv
 		var reply bool
-		err := pushSrvClient.Call("PushSrv.SendMsg", mTo, &reply)
+		err := pushSrvClient.Call("PushSrv.SendMsg", *msg, &reply)
 
 	} else if msg.Type == common.MESSAGE_TYPE_PUBLIC {
 		//公开消息
