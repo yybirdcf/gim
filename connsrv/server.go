@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"gim/common"
 	"github.com/garyburd/redigo/redis"
@@ -79,7 +80,7 @@ func (self *Server) listen() {
 					resp.retData = *msg
 
 					client.lastAccTime = int(time.Now().Unix())
-					client.out <- json.Marshal(resp)
+					client.out <- string(json.Marshal(resp))
 				}
 			case msg := self.out:
 				//客户端需要发出去的消息
@@ -108,7 +109,7 @@ func (self *Server) join(conn net.Conn) {
 		c := <-client.activating
 		//c!=nil代表时激活，否则就结束本次激活goroute
 		if c != nil {
-			fmt.Printf("client %d is activating", c.GetId())
+			fmt.Printf("client %d is activating", c.id)
 			self.activating <- c
 		}
 	}()
@@ -116,7 +117,7 @@ func (self *Server) join(conn net.Conn) {
 	//开一个gorouting处理客户端退出
 	go func() {
 		c := <-client.quiting
-		fmt.Printf("client %d is quiting", c.GetId())
+		fmt.Printf("client %d is quiting", c.id)
 		self.quiting <- c
 	}()
 }
