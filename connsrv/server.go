@@ -146,7 +146,7 @@ func (self *Server) activate(client *Client) {
 	if client != nil {
 		self.lock.Lock()
 
-		if cli, ok := self.clients[client.id]; ok {
+		if _, ok := self.clients[client.id]; ok {
 			self.quit(self.clients[client.id])
 		}
 

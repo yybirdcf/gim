@@ -206,6 +206,9 @@ func (self *Client) Read() {
 			} else {
 				//认证
 				err := json.Unmarshal(line, &clientCmd)
+				if err != nil {
+					panic(err.Error())
+				}
 				if clientCmd.cmd == CMD_AUTH {
 					//暂时没有认证过程,参数{uid}//{uid}&{token}
 					uid, _ := strconv.Atoi(clientCmd.params)
