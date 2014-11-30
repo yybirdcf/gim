@@ -15,7 +15,7 @@ var (
 
 type Store interface {
 	Save(m *common.Message) bool
-	Read(to int, maxId int64, limit int) []common.Message
+	Read(who int, maxId int64, limit int) []common.Message
 	GetGroupMembers(groupId int) []int
 }
 

@@ -1,33 +1,16 @@
 package main
 
 import (
+	"common"
 	"fmt"
 	"net/rpc"
 	"time"
 )
 
-type WArgs struct {
-	Id   int64
-	Msg  string
-	Type int
-	Time int64
-	From int
-	To   int
-}
-
 type RArgs struct {
 	To    int
 	MaxId int64
 	Limit int
-}
-
-type Message struct {
-	Id   int64
-	Msg  string
-	Type int
-	Time int64
-	From int
-	To   int
 }
 
 func main() {
@@ -38,13 +21,15 @@ func main() {
 		return
 	}
 
-	args := WArgs{
-		Id:   time.Now().Unix(),
-		Msg:  "message from 1 to 2",
-		Type: 1,
-		Time: time.Now().Unix(),
-		From: 1,
-		To:   2,
+	args := common.Message{
+		Mid:     time.Now().Unix(),
+		Uid:     1000,
+		Content: "test message",
+		Type:    common.MESSAGE_TYPE_USER,
+		Time:    time.Now().Unix(),
+		From:    1,
+		To:      1000,
+		Group:   0,
 	}
 
 	var reply_b bool
@@ -55,11 +40,11 @@ func main() {
 	}
 
 	args2 := RArgs{
-		To:    2,
+		Who:   1000,
 		MaxId: 0,
 		Limit: 10,
 	}
-	var reply_messages []Message
+	var reply_messages []common.Message
 	err = client.Call("MS.ReadMessages", args2, &reply_messages)
 	if err != nil {
 		fmt.Printf("MS test, call MS.ReadMessages failed: %s\n", err.Error())
