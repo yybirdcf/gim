@@ -54,6 +54,9 @@ func HandleServerMsg(ss *SendSrv, msg *common.Message) {
 		//接收者消息发送给目的地push srv
 		var reply bool
 		err := pushSrvClient.Call("PushSrv.SendMsg", mTo, &reply)
+		if err != nil {
+			panic(err.Error())
+		}
 
 		//将生成的消息给MS存储
 		ss.msgPool <- &mFrom
@@ -100,7 +103,9 @@ func HandleServerMsg(ss *SendSrv, msg *common.Message) {
 			//接收者消息发送给目的地push srv
 			var reply bool
 			err := pushSrvClient.Call("PushSrv.SendMsg", mTo, &reply)
-
+			if err != nil {
+				panic(err.Error())
+			}
 			//存储消息
 			ss.msgPool <- &mTo
 		}
@@ -109,11 +114,16 @@ func HandleServerMsg(ss *SendSrv, msg *common.Message) {
 		//接收者消息发送给目的地push srv
 		var reply bool
 		err := pushSrvClient.Call("PushSrv.SendMsg", *msg, &reply)
-
+		if err != nil {
+			panic(err.Error())
+		}
 	} else if msg.Type == common.MESSAGE_TYPE_PUBLIC {
 		//公开消息
 		//接收者消息发送给目的地push srv
 		var reply bool
 		err := pushSrvClient.Call("PushSrv.SendMsg", *msg, &reply)
+		if err != nil {
+			panic(err.Error())
+		}
 	}
 }
