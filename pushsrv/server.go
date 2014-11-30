@@ -28,14 +28,14 @@ func (self *PushSrv) SendMsg(args *common.Message, reply *bool) error {
 }
 
 func NewPushSrv() *PushSrv {
-	ps := PushSrv{
+	ps := &PushSrv{
 		buf: make(chan *common.Message, 2048),
 	}
 
 	client, err := rpc.DialHTTP("tcp", Conf.ConnSrv)
 	if err != nil {
 		panic(err.Error())
-		return
+		return nil
 	}
 	connClient = client
 
@@ -59,7 +59,7 @@ func NewPushSrv() *PushSrv {
 
 //connect server or apns
 func dispatchMsg(m *common.Message) {
-	exist, _ := redClient.Get(USER_ONLINE_PREFIX + strconv.Itoa(m.Uid))
+	exist, _ := redClient.Do("GET", USER_ONLINE_PREFIX+strconv.Itoa(m.Uid))
 	if exist != nil {
 		var ok bool
 		connClient.Call("Server.SendMsg", *m, &ok)
