@@ -8,7 +8,7 @@ import (
 )
 
 type RArgs struct {
-	To    int
+	Who   int
 	MaxId int64
 	Limit int
 }
@@ -52,7 +52,7 @@ func (self *MS) SaveMessage(args *common.Message, reply *bool) error {
 
 //获取消息调用
 func (self *MS) ReadMessages(args *RArgs, reply *[]common.Message) error {
-	msgs := store.Read(args.To, args.MaxId, args.Limit)
+	msgs := store.Read(args.Who, args.MaxId, args.Limit)
 	*reply = msgs
 	return nil
 }

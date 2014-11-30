@@ -8,7 +8,7 @@ import (
 )
 
 type RArgs struct {
-	To    int
+	Who   int
 	MaxId int64
 	Limit int
 }
@@ -26,11 +26,11 @@ func main() {
 	}
 
 	args := common.Message{
-		Mid:     time.Now().Unix(),
+		Mid:     int(time.Now().Unix()),
 		Uid:     1000,
 		Content: "test message",
 		Type:    common.MESSAGE_TYPE_USER,
-		Time:    time.Now().Unix(),
+		Time:    int(time.Now().Unix()),
 		From:    1,
 		To:      1000,
 		Group:   0,
