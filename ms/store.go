@@ -1,8 +1,8 @@
 package main
 
 import (
-	"common"
 	"errors"
+	"gim/common"
 )
 
 const (

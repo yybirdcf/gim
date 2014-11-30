@@ -1,9 +1,9 @@
 package main
 
 import (
-	"common"
 	"database/sql"
 	"fmt"
+	"gim/common"
 	_ "mysql"
 	"strconv"
 )
