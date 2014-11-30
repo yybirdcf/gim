@@ -3,16 +3,17 @@ package main
 import (
 	"fmt"
 	"gim/common"
-	"github.com/astaxie/goredis"
+	"github.com/garyburd/redigo/redis"
 	"net"
 	"net/rpc"
 	"sendsrv"
+	"strconv"
 	"sync"
 	"time"
 )
 
 var (
-	redClient     goredis.Client
+	redClient     redis.Conn
 	sendSrvClient *rpc.Client
 )
 
@@ -34,16 +35,9 @@ type Server struct {
 
 //push server 调用的rpc服务，负责推送消息
 func (self *Server) SendMsg(args *common.Message, reply *bool) error {
-	self.in <- &Message{
-		Mid:     args.Mid,
-		Uid:     args.Uid,
-		Content: args.Content,
-		Type:    args.Type,
-		Time:    args.Time,
-		From:    args.From,
-		To:      args.To,
-		Group:   args.Group,
-	}
+	self.in <- args
+
+	return nil
 }
 
 func CreateServer() *Server {
@@ -56,7 +50,9 @@ func CreateServer() *Server {
 		out:        make(chan *common.Message),
 	}
 
-	redClient.Addr = Conf.Redis
+	conn, _ := redis.Dial("tcp", Conf.Redis)
+	redClient = conn
+
 	client, err := rpc.DialHTTP("tcp", Conf.SendSrvTcp)
 	if err != nil {
 		panic(err.Error())
@@ -134,7 +130,7 @@ func (self *Server) quit(client *Client) {
 		self.lock.Unlock()
 
 		//删除客户端在线信息
-		redClient.Del(USER_ONLINE_PREFIX + client.id)
+		redClient.Del(USER_ONLINE_PREFIX + strconv.Itoa(client.id))
 
 		//如果客户端没有激活，需要关闭激活goroute
 		client.activating <- nil
