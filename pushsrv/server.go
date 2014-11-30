@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"gim/common"
-	"github.com/astaxie/goredis"
+	"github.com/garyburd/redigo/redis"
 	"net/http"
 	"net/rpc"
 	"sync"
@@ -15,7 +15,7 @@ const (
 
 var (
 	connClient *rpc.Client
-	redClient  goredis.Client
+	redClient  redis.Conn
 )
 
 type PushSrv struct {
@@ -50,7 +50,8 @@ func NewPushSrv() *PushSrv {
 	}
 	connClient = client
 
-	redClient.Addr = Conf.Redis
+	conn, _ := redis.Dial("tcp", Conf.Redis)
+	redClient = conn
 
 	for i := 0; i < Conf.MaxThread; i++ {
 		go func() {
