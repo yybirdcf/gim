@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/rpc"
 	"time"
 )
 
@@ -12,18 +13,31 @@ const (
 	httpReadTimeout = 30 //sec
 )
 
+var (
+	sendSrvClient *rpc.Client
+)
+
 // StartHTTP start listen http.
 func StartHTTP() {
 	// external
 	httpServeMux := http.NewServeMux()
 	// 1.0
-	httpServeMux.HandleFunc("/server/test", TestServer)
-	httpServeMux.HandleFunc("/client/dispatch", ClientDispatch)
+	httpServeMux.HandleFunc("/public/send", SendPublicMsg)
+	httpServeMux.HandleFunc("/sub/send", SendSubMsg)
 
 	for _, bind := range Conf.HttpBind {
 		fmt.Printf("start http listen addr:\"%s\"", bind)
 		go httpListen(httpServeMux, bind)
 	}
+
+	//开启send srv rpc
+	client, err := rpc.DialHTTP("tcp", Conf.SendSrv)
+	if err != nil {
+		panic(err.Error())
+		fmt.Printf("web start rpc failed, connect %s failed\n", Conf.SendSrv)
+		return
+	}
+	sendSrvClient = client
 }
 
 func httpListen(mux *http.ServeMux, bind string) {
@@ -31,11 +45,11 @@ func httpListen(mux *http.ServeMux, bind string) {
 	l, err := net.Listen("tcp", bind)
 	if err != nil {
 		fmt.Printf("net.Listen(\"tcp\", \"%s\") error(%v)", bind, err)
-		panic(err)
+		panic(err.Error())
 	}
 	if err := server.Serve(l); err != nil {
 		fmt.Printf("server.Serve() error(%v)", err)
-		panic(err)
+		panic(err.Error())
 	}
 }
 

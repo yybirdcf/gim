@@ -25,7 +25,7 @@ func NewMysqlStore() *MysqlStore {
 }
 
 func (self *MysqlStore) Read(to int, maxId int64, limit int) []Message {
-	rows, err := self.db.Query("SELECT * FROM message WHERE msg_to=? AND msg_id>? ORDER BY msg_id ASC LIMIT "+strconv.Itoa(limit), to, maxId)
+	rows, err := self.db.Query("SELECT msg_uid, msg_mid, msg_content, msg_type, msg_time, msg_from, msg_to, msg_group FROM message WHERE to=? AND mid>? ORDER BY mid ASC LIMIT "+strconv.Itoa(limit), to, maxId)
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
 		panic(err.Error())
@@ -35,41 +35,45 @@ func (self *MysqlStore) Read(to int, maxId int64, limit int) []Message {
 	var ms []Message
 	for rows.Next() {
 		var (
-			Id   int64
-			Msg  string
-			Type int
-			Time int64
-			From int
-			To   int
+			Mid     int
+			Uid     int
+			Content string
+			Type    int
+			Time    int
+			From    int
+			To      int
+			Group   int
 		)
-		err = rows.Scan(&Id, &Msg, &Type, &Time, &From, &To)
+		err = rows.Scan(&Mid, &Uid, &Content, &Type, &Time, &From, &To, &Group)
 		if err != nil {
 			fmt.Printf("%s\n", err.Error())
 			panic(err.Error())
 		}
 
-		ms = append(ms, Message{
-			Id:   Id,
-			Msg:  Msg,
-			Type: Type,
-			Time: Time,
-			From: From,
-			To:   To,
+		ms = append(ms, common.Message{
+			Mid:     Mid,
+			Uid:     Uid,
+			Content: Content,
+			Type:    Type,
+			Time:    Time,
+			From:    From,
+			To:      To,
+			Group:   Group,
 		})
 	}
 
 	return ms
 }
 
-func (self *MysqlStore) Save(m *Message) bool {
-	stmt, err := self.db.Prepare("INSERT INTO message (msg_id, msg_content, msg_type, msg_time, msg_from, msg_to) VALUES (?, ?, ?, ?, ?, ?)")
+func (self *MysqlStore) Save(m *common.Message) bool {
+	stmt, err := self.db.Prepare("INSERT INTO message (msg_uid, msg_mid, msg_content, msg_type, msg_time, msg_from, msg_to, msg_group) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
 		panic(err.Error())
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(m.Id, m.Msg, m.Type, m.Time, m.From, m.To)
+	res, err := stmt.Exec(m.Uid, m.Mid, m.Content, m.Type, m.Time, m.From, m.To, m.Group)
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
 		panic(err.Error())
@@ -81,78 +85,27 @@ func (self *MysqlStore) Save(m *Message) bool {
 	return true
 }
 
-func (self *MysqlStore) Close() {
-	self.db.Close()
-}
-
-func (self *MysqlStore) IsUserValid(id int, token string) bool {
-	row, err := self.db.QueryRow("SELECT * FROM User WHERE id=? AND token=? LIMIT 1", id, token)
-	defer row.Close()
-	if err != nil && err == sql.ErrNoRows {
-		return false
-	} else if err != nil {
-		fmt.Printf("%s\n", err.Error())
-		panic(err.Error())
-	} else {
-		return true
-	}
-}
-
-func (self *MysqlStore) NewClientInfomation(guid string, connSrv string, userId int) bool {
-	stmt, err := self.db.Prepare("INSERT INTO client_information (guid, connSrv, genTime, userId) VALUES (?, ?, ?, ?)")
+func (self *MysqlStore) GetGroupMembers(groupId int) []int {
+	rows, err := self.db.Query("SELECT user FROM group WHERE group=?", groupId)
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
 		panic(err.Error())
 	}
-	defer stmt.Close()
+	defer rows.Close()
 
-	res, err := stmt.Exec(guid, connSrv, time.Now().Unix(), userId)
-	if err != nil {
-		fmt.Printf("%s\n", err.Error())
-		panic(err.Error())
-		return false
+	var members []int
+	for rows.Next() {
+		var (
+			user int
+		)
+		err = rows.Scan(&user)
+		if err != nil {
+			fmt.Printf("%s\n", err.Error())
+			panic(err.Error())
+		}
+
+		members = append(members, user)
 	}
 
-	affect, err := res.RowsAffected()
-	fmt.Printf("rows affect %d\n", affect)
-	return true
-}
-
-func (self *MysqlStore) DeleteClientInformation(guid string) bool {
-	stmt, err := self.db.Prepare("DELETE FROM client_information WHERE guid=?")
-	defer stmt.Close()
-	if err != nil {
-		fmt.Printf("%s\n", err.Error())
-		panic(err.Error())
-	}
-
-	res, err := stmt.Exec(guid)
-	if err != nil {
-		fmt.Printf("%s\n", err.Error())
-		panic(err.Error())
-	}
-
-	return true
-}
-
-func (self *MysqlStore) ActiveClientInformation(guid string, connSrv string, userId int) bool {
-	stmt, err := self.db.Prepare("UPDATE client_information SET status=1 WHERE guid=? AND userId=? AND connSrv=?")
-
-	defer stmt.Close()
-	if err != nil {
-		fmt.Printf("%s\n", err.Error())
-		panic(err.Error())
-	}
-
-	res, err := stmt.Exec(guid, userId, connSrv)
-	if err != nil {
-		fmt.Printf("%s\n", err.Error())
-		panic(err.Error())
-	}
-
-	rowCnt, err := res.RowsAffected()
-	if rowCnt > 0 {
-		return true
-	}
-	return false
+	return members
 }

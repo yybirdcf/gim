@@ -11,8 +11,8 @@ type Config struct {
 	Dir       string
 	MaxThread int
 	MS        string
+	ConnSrv   string
 	Redis     string
-	PushSrv   string
 }
 
 var (
@@ -21,14 +21,14 @@ var (
 
 func InitConfig() error {
 	Conf = &Config{
-		TcpBind:   "127.0.0.1:8380",
-		PidFile:   "/tmp/gim-sendsrv.pid",
+		TcpBind:   "127.0.0.1:8980",
+		PidFile:   "/tmp/gim-pushsrv.pid",
 		User:      "nobody nobody",
 		Dir:       "./",
 		MaxThread: runtime.NumCPU(),
 		MS:        "127.0.0.1:8680",
+		ConnSrv:   "127.0.0.1:8280",
 		Redis:     "127.0.0.1:6379",
-		PushSrv:   "127.0.0.1:8980",
 	}
 
 	return nil

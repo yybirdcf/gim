@@ -7,91 +7,81 @@ import (
 	"time"
 )
 
-type UserArgs struct {
-	id    int
-	token string
-}
-
-type ClientArgs struct {
-	guid    string
-	connSrv string
-	userId  int
-}
-
-//测试web服务器
-func TestServer(w http.ResponseWriter, r *http.Request) {
-	//限制get
-	if r.Method != "GET" {
-		http.Error(w, "Method Not Allowed", 405)
+func retJson(w http.ResponseWriter, r *http.Request, retCode int, retMsg string, retData map[interface{}]interface{}) {
+	res := map[string]interface{}{
+		"retCode": retCode,
+		"retMsg":  retMsg,
+		"retData": retData,
 	}
-
-	//获取参数(无)
-	res := map[string]interface{}{"ret": OK}
 	retWrite(w, r, res, "", time.Now())
 }
 
-//分配一个新的客户端
-func ClientDispatch(w http.ResponseWriter, r *http.Request) {
-	//判断用户是否有效
-	client, err := rpc.DialHTTP("tcp", Conf.MS)
-	if err != nil {
-		fmt.Printf("web connect ms, connect %s failed\n", Conf.MS)
+//http://127.0.0.1:8180/public/send?msg=hello&from=1&to=1000
+//http://127.0.0.1:8180/public/send?msg=hello&from=1&to=1001
+func SendPublicMsg(w http.ResponseWriter, r *http.Request) {
+	msg := r.Form.Get("msg")
+	from := r.Form.Get("from")
+	to := r.Form.Get("to")
+	if msg == nil || from == nil || to == nil {
+		retJson(w, r, -1, "缺少参数", nil)
 		return
 	}
 
-	r.ParseForm()
-	if len(r.Form["user_id"]) == 0 || len(r.Form["token"]) == 0 {
-		res := map[string]interface{}{"ret": PARAM_ERR, "msg": "缺少用户ID或者token信息"}
-		retWrite(w, r, res, "", time.Now())
+	//构造一个公开消息结构
+	m := common.Message{
+		Mid:     0,
+		Uid:     to,
+		Content: msg,
+		Type:    common.MESSAGE_TYPE_PUBLIC,
+		Time:    time.Now().Unix(),
+		From:    from,
+		To:      to,
+		Group:   0,
+	}
+
+	//调用send srv rpc将消息发过去
+	reply bool
+	err := sendSrvClient.Call("SendSrv.SendMsg", m, &reply)
+	if err != nil || !reply{
+		retJson(w, r, -1, "发送消息失败", nil)
+		return
+	}
+	//输出结果到前台
+	retJson(w, r, 0, "发送成功", nil)
+	return
+}
+
+//http://127.0.0.1:8180/sub/send?subId=1001&msg=hello&from=2&to=10002
+func SendSubMsg(w http.ResponseWriter, r *http.Request) {
+	subId := r.Form.Get("subId")
+	msg := r.Form.Get("msg")
+	from := r.Form.Get("from")
+	to := r.Form.Get("to")
+	if msg == nil || subId == nil || from == nil || to == nil{
+		retJson(w, r, -1, "缺少参数", nil)
 		return
 	}
 
-	userId := r.Form["user_id"][0]
-	token := r.Form["token"][0]
-
-	userArgs := UserArgs{
-		id:    userId,
-		token: token,
+	//构造一个订阅消息结构
+	m := common.Message{
+		Mid:     0,
+		Uid:     to,
+		Content: msg,
+		Type:    common.MESSAGE_TYPE_SUB,
+		Time:    time.Now().Unix(),
+		From:    from,
+		To:      to,
+		Group:   subId,
 	}
 
-	var exist bool
-	err = client.Call("MS.GetUser", userArgs, &exist)
-	if err != nil {
-		fmt.Printf("Web call MS, call MS.GetUser failed: %s\n", err.Error())
+	//调用send srv rpc将消息发过去
+	reply bool
+	err := sendSrvClient.Call("SendSrv.SendMsg", m, &reply)
+	if err != nil || !reply{
+		retJson(w, r, -1, "发送消息失败", nil)
 		return
 	}
-
-	if !exist {
-		res := map[string]interface{}{"ret": -1, "msg": "用户不存在"}
-		retWrite(w, r, res, "", time.Now())
-		return
-	}
-
-	//生成guid
-	rand.Seed(time.Now().UTC().UnixNano())
-	guid, err := common.NewGuid(rand.Intn(9999999))
-	//分配connect srv
-	connSrv := "conn01"
-	//新增一个客户端信息
-	clientArgs := ClientArgs{
-		guid:    guid,
-		connSrv: connSrv,
-		userId:  userId,
-	}
-	var success bool
-	err = client.Call("MS.NewClientInformation", clientArgs, &success)
-	if err != nil {
-		fmt.Printf("Web call MS, call MS.NewClientInformation failed: %s\n", err.Error())
-		return
-	}
-
-	if !success {
-		res := map[string]interface{}{"ret": -1, "msg": "创建客户端信息失败"}
-		retWrite(w, r, res, "", time.Now())
-		return
-	}
-
-	res := map[string]interface{}{"ret": OK, "msg": "", "connsrv": connSrv, "guid": guid}
-	retWrite(w, r, res, "", time.Now())
+	//输出结果到前台
+	retJson(w, r, 0, "发送成功", nil)
 	return
 }

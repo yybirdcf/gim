@@ -10,7 +10,7 @@ import (
 func main() {
 	var err error
 
-	fmt.Printf("gim cis start....\n")
+	fmt.Printf("gim pushsrv start....\n")
 
 	if err = InitConfig(); err != nil {
 		fmt.Printf("InitConfig() error(%v)", err)
@@ -21,7 +21,7 @@ func main() {
 	runtime.GOMAXPROCS(max)
 
 	// start http listen.
-	StartCis()
+	StartPushSrv()
 	// init process
 	// sleep one second, let the listen start
 	time.Sleep(time.Second)
@@ -32,5 +32,5 @@ func main() {
 	// init signals, block wait signals
 	signalCH := common.InitSignal()
 	common.HandleSignal(signalCH)
-	fmt.Printf("gim cis stop\n")
+	fmt.Printf("gim pushsrv stop\n")
 }

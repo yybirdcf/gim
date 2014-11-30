@@ -10,7 +10,7 @@ import (
 func main() {
 	var err error
 
-	fmt.Printf("gim cis start....\n")
+	fmt.Printf("gim ms start....\n")
 
 	if err = InitConfig(); err != nil {
 		fmt.Printf("InitConfig() error(%v)", err)
@@ -32,5 +32,5 @@ func main() {
 	// init signals, block wait signals
 	signalCH := common.InitSignal()
 	common.HandleSignal(signalCH)
-	fmt.Printf("gim cis stop\n")
+	fmt.Printf("gim ms stop\n")
 }
