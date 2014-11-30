@@ -115,7 +115,7 @@ func (self *Client) Read() {
 					resp.retMsg = "解析消息失败"
 					resp.retData = nil
 					str, _ := json.Marshal(resp)
-					self.out <- str
+					self.out <- string(str)
 					continue
 				}
 
@@ -128,7 +128,7 @@ func (self *Client) Read() {
 						resp.retMsg = "解析消息失败"
 						resp.retData = nil
 						str, _ := json.Marshal(resp)
-						self.out <- str
+						self.out <- string(str)
 						continue
 					}
 
@@ -163,14 +163,14 @@ func (self *Client) Read() {
 
 						self.lastAccTime = int(time.Now().Unix())
 						str, _ := json.Marshal(resp)
-						self.out <- str
+						self.out <- string(str)
 					} else {
 						resp.retCode = -1
 						resp.retType = CMD_UNKNOW
 						resp.retMsg = "解析消息失败"
 						resp.retData = nil
 						str, _ := json.Marshal(resp)
-						self.out <- str
+						self.out <- string(str)
 						continue
 					}
 
@@ -183,7 +183,7 @@ func (self *Client) Read() {
 					self.lastAccTime = int(time.Now().Unix())
 
 					str, _ := json.Marshal(resp)
-					self.out <- str
+					self.out <- string(str)
 				} else if clientCmd == CMD_PING {
 					//客户端ping，返回pong
 					resp.retCode = 0
@@ -193,7 +193,7 @@ func (self *Client) Read() {
 
 					self.lastAccTime = int(time.Now().Unix())
 					str, _ := json.Marshal(resp)
-					self.out <- str
+					self.out <- string(str)
 				} else {
 					//未知的消息类型
 					resp.retCode = -1
@@ -201,7 +201,7 @@ func (self *Client) Read() {
 					resp.retMsg = "未知的消息类型"
 					resp.retData = nil
 					str, _ := json.Marshal(resp)
-					self.out <- str
+					self.out <- string(str)
 				}
 			} else {
 				//认证
@@ -219,14 +219,14 @@ func (self *Client) Read() {
 
 					go self.Write() //开启写goroute
 					str, _ := json.Marshal(resp)
-					self.out <- str
+					self.out <- string(str)
 				} else {
 					resp.retCode = -1
 					resp.retType = CMD_UNKNOW
 					resp.retMsg = "未知的消息类型，需要认证"
 					resp.retData = nil
 					str, _ := json.Marshal(resp)
-					self.out <- str
+					self.out <- string(str)
 				}
 			}
 		} else if err == io.EOF {
