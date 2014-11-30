@@ -27,15 +27,17 @@ func SendPublicMsg(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	From, _ := strconv.Atoi(from)
+	Uid, _ := strconv.Atoi(to)
 	//构造一个公开消息结构
 	m := common.Message{
 		Mid:     0,
-		Uid:     strconv.Atoi(to),
+		Uid:     Uid,
 		Content: msg,
 		Type:    common.MESSAGE_TYPE_PUBLIC,
 		Time:    int(time.Now().Unix()),
-		From:    strconv.Atoi(from),
-		To:      strconv.Atoi(to),
+		From:    From,
+		To:      Uid,
 		Group:   0,
 	}
 
@@ -62,16 +64,19 @@ func SendSubMsg(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	Group, _ := strconv.Atoi(subId)
+	From, _ := strconv.Atoi(from)
+	Uid, _ := strconv.Atoi(to)
 	//构造一个订阅消息结构
 	m := common.Message{
 		Mid:     0,
-		Uid:     strconv.Atoi(to),
+		Uid:     Uid,
 		Content: msg,
 		Type:    common.MESSAGE_TYPE_SUB,
 		Time:    int(time.Now().Unix()),
-		From:    strconv.Atoi(from),
-		To:      strconv.Atoi(to),
-		Group:   strconv.Atoi(subId),
+		From:    From,
+		To:      Uid,
+		Group:   Group,
 	}
 
 	//调用send srv rpc将消息发过去
