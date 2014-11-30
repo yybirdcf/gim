@@ -71,6 +71,7 @@ func (self *SendSrv) SendMsg(m *common.Message, reply *bool) error {
 	if m != nil {
 		self.buf <- m
 	}
+	return nil
 }
 
 func StartSendSrv() {
