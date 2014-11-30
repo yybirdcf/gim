@@ -55,7 +55,7 @@ func CreateServer() *Server {
 	client, err := rpc.DialHTTP("tcp", Conf.SendSrvTcp)
 	if err != nil {
 		panic(err.Error())
-		return
+		return nil
 	}
 	sendSrvClient = client
 
@@ -64,6 +64,7 @@ func CreateServer() *Server {
 }
 
 func (self *Server) listen() {
+	var resp ClientResp
 	go func() {
 		for {
 			select {
@@ -77,7 +78,7 @@ func (self *Server) listen() {
 					resp.retMsg = "OK"
 					resp.retData = *msg
 
-					client.lastAccTime = time.Now().Unix()
+					client.lastAccTime = int(time.Now().Unix())
 					client.out <- json.Marshal(resp)
 				}
 			case msg := self.out:

@@ -119,9 +119,9 @@ func (self *Client) Read() {
 					continue
 				}
 
-				if clientCmd == CMD_MSG {
+				if clientCmd.cmd == CMD_MSG {
 					//正常的用户消息
-					err = json.Unmarshal(clientCmd.params, &cm)
+					err = json.Unmarshal([]byte(clientCmd.params), &cm)
 					if err != nil {
 						resp.retCode = -1
 						resp.retType = CMD_UNKNOW
@@ -147,7 +147,7 @@ func (self *Client) Read() {
 							Uid:     0,
 							Content: cm.Content,
 							Type:    cm.Type,
-							Time:    time.Now().Unix(),
+							Time:    int(time.Now().Unix()),
 							From:    self.id,
 							To:      to,
 							Group:   group,
@@ -184,7 +184,7 @@ func (self *Client) Read() {
 
 					str, _ := json.Marshal(resp)
 					self.out <- string(str)
-				} else if clientCmd == CMD_PING {
+				} else if clientCmd.cmd == CMD_PING {
 					//客户端ping，返回pong
 					resp.retCode = 0
 					resp.retType = CMD_PING
@@ -208,7 +208,8 @@ func (self *Client) Read() {
 				err := json.Unmarshal(line, &clientCmd)
 				if clientCmd.cmd == CMD_AUTH {
 					//暂时没有认证过程,参数{uid}//{uid}&{token}
-					self.id = strconv.Atoi(clientCmd.params)
+					uid, _ := strconv.Atoi(clientCmd.params)
+					self.id = uid
 					self.ready = CLIENT_READY
 					self.activating <- self
 
