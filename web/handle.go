@@ -2,8 +2,8 @@ package main
 
 import (
 	"gim/common"
-	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -22,7 +22,7 @@ func SendPublicMsg(w http.ResponseWriter, r *http.Request) {
 	msg := r.Form.Get("msg")
 	from := r.Form.Get("from")
 	to := r.Form.Get("to")
-	if msg == nil || from == nil || to == nil {
+	if msg == "" || from == "" || to == "" {
 		retJson(w, r, -1, "缺少参数", nil)
 		return
 	}
@@ -30,12 +30,12 @@ func SendPublicMsg(w http.ResponseWriter, r *http.Request) {
 	//构造一个公开消息结构
 	m := common.Message{
 		Mid:     0,
-		Uid:     to,
+		Uid:     strconv.Atoi(to),
 		Content: msg,
 		Type:    common.MESSAGE_TYPE_PUBLIC,
-		Time:    time.Now().Unix(),
-		From:    from,
-		To:      to,
+		Time:    int(time.Now().Unix()),
+		From:    strconv.Atoi(from),
+		To:      strconv.Atoi(to),
 		Group:   0,
 	}
 
@@ -57,7 +57,7 @@ func SendSubMsg(w http.ResponseWriter, r *http.Request) {
 	msg := r.Form.Get("msg")
 	from := r.Form.Get("from")
 	to := r.Form.Get("to")
-	if msg == nil || subId == nil || from == nil || to == nil {
+	if msg == "" || subId == "" || from == "" || to == "" {
 		retJson(w, r, -1, "缺少参数", nil)
 		return
 	}
@@ -65,13 +65,13 @@ func SendSubMsg(w http.ResponseWriter, r *http.Request) {
 	//构造一个订阅消息结构
 	m := common.Message{
 		Mid:     0,
-		Uid:     to,
+		Uid:     strconv.Atoi(to),
 		Content: msg,
 		Type:    common.MESSAGE_TYPE_SUB,
-		Time:    time.Now().Unix(),
-		From:    from,
-		To:      to,
-		Group:   subId,
+		Time:    int(time.Now().Unix()),
+		From:    strconv.Atoi(from),
+		To:      strconv.Atoi(to),
+		Group:   strconv.Atoi(subId),
 	}
 
 	//调用send srv rpc将消息发过去
