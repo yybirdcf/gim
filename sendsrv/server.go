@@ -1,8 +1,8 @@
 package main
 
 import (
-	"common"
 	"fmt"
+	"gim/common"
 	"github.com/garyburd/redigo/redis"
 	"net/http"
 	"net/rpc"

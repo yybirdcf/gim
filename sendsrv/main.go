@@ -1,8 +1,8 @@
 package main
 
 import (
-	"common"
 	"fmt"
+	"gim/common"
 	"runtime"
 	"time"
 )
