@@ -3,12 +3,10 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"gim/common"
 	"io"
 	"net"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -71,7 +69,7 @@ func CreateClient(conn net.Conn) *Client {
 		reader:      reader,
 		quiting:     make(chan *Client),
 		activating:  make(chan *Client),
-		lastAccTime: time.Now().Unix(),
+		lastAccTime: int(time.Now().Unix()),
 		ready:       CLIENT_INIT,
 	}
 
@@ -88,12 +86,12 @@ func (self *Client) Listen() {
 func (self *Client) Write() {
 	for m := range self.out {
 		if _, err := self.writer.WriteString(m + "\n"); err != nil {
-			self.quit()
+			self.Quit()
 			return
 		}
 
 		if err := self.writer.Flush(); err != nil {
-			self.quit()
+			self.Quit()
 			return
 		}
 	}
@@ -116,7 +114,8 @@ func (self *Client) Read() {
 					resp.retType = CMD_UNKNOW
 					resp.retMsg = "解析消息失败"
 					resp.retData = nil
-					self.out <- json.Marshal(resp)
+					str, _ := json.Marshal(resp)
+					self.out <- str
 					continue
 				}
 
@@ -128,15 +127,16 @@ func (self *Client) Read() {
 						resp.retType = CMD_UNKNOW
 						resp.retMsg = "解析消息失败"
 						resp.retData = nil
-						self.out <- json.Marshal(resp)
+						str, _ := json.Marshal(resp)
+						self.out <- str
 						continue
 					}
 
 					if cm.Type == common.MESSAGE_TYPE_USER || cm.Type == common.MESSAGE_TYPE_GROUP {
 						//将消息发送给send srv
 						//构造消息结构
-						group = 0
-						to = cm.To
+						group := 0
+						to := cm.To
 						if cm.Type == common.MESSAGE_TYPE_GROUP {
 							group = cm.To
 							to = 0
@@ -161,14 +161,16 @@ func (self *Client) Read() {
 						resp.retMsg = "OK"
 						resp.retData = cm.UniqueId //用户客户端确认消息是否发送成功
 
-						self.lastAccTime = time.Now().Unix()
-						self.out <- json.Marshal(resp)
+						self.lastAccTime = int(time.Now().Unix())
+						str, _ := json.Marshal(resp)
+						self.out <- str
 					} else {
 						resp.retCode = -1
 						resp.retType = CMD_UNKNOW
 						resp.retMsg = "解析消息失败"
 						resp.retData = nil
-						self.out <- json.Marshal(resp)
+						str, _ := json.Marshal(resp)
+						self.out <- str
 						continue
 					}
 
@@ -178,9 +180,10 @@ func (self *Client) Read() {
 					resp.retType = CMD_AUTH
 					resp.retMsg = "已经认证通过"
 					resp.retData = nil
-					self.lastAccTime = time.Now().Unix()
+					self.lastAccTime = int(time.Now().Unix())
 
-					self.out <- json.Marshal(resp)
+					str, _ := json.Marshal(resp)
+					self.out <- str
 				} else if clientCmd == CMD_PING {
 					//客户端ping，返回pong
 					resp.retCode = 0
@@ -188,15 +191,17 @@ func (self *Client) Read() {
 					resp.retMsg = "PONG"
 					resp.retData = nil
 
-					self.lastAccTime = time.Now().Unix()
-					self.out <- json.Marshal(resp)
+					self.lastAccTime = int(time.Now().Unix())
+					str, _ := json.Marshal(resp)
+					self.out <- str
 				} else {
 					//未知的消息类型
 					resp.retCode = -1
 					resp.retType = CMD_UNKNOW
 					resp.retMsg = "未知的消息类型"
 					resp.retData = nil
-					self.out <- json.Marshal(resp)
+					str, _ := json.Marshal(resp)
+					self.out <- str
 				}
 			} else {
 				//认证
@@ -213,13 +218,15 @@ func (self *Client) Read() {
 					resp.retData = nil
 
 					go self.Write() //开启写goroute
-					self.out <- json.Marshal(resp)
+					str, _ := json.Marshal(resp)
+					self.out <- str
 				} else {
 					resp.retCode = -1
 					resp.retType = CMD_UNKNOW
 					resp.retMsg = "未知的消息类型，需要认证"
 					resp.retData = nil
-					self.out <- json.Marshal(resp)
+					str, _ := json.Marshal(resp)
+					self.out <- str
 				}
 			}
 		} else if err == io.EOF {
