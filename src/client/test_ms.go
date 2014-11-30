@@ -13,6 +13,10 @@ type RArgs struct {
 	Limit int
 }
 
+type GroupArgs struct {
+	groupId int
+}
+
 func main() {
 	server := "127.0.0.1:8680"
 	client, err := rpc.DialHTTP("tcp", server)
@@ -55,4 +59,16 @@ func main() {
 	for _, m := range reply_messages {
 		fmt.Printf("%v\n", m)
 	}
+
+	groupArgs := GroupArgs{
+		groupId: 1,
+	}
+	var userIds []int
+	userIds = make([]int, 100)
+	err = client.Call("MS.GetGroupMembers", groupArgs, &userIds)
+	if err != nil {
+		fmt.Printf("MS test, call MS.ReadMessages failed: %s\n", err.Error())
+		return
+	}
+	fmt.Printf("%v\n", userIds)
 }

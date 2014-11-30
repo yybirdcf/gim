@@ -1,11 +1,11 @@
 package main
 
 import (
+	"common"
 	"database/sql"
 	"fmt"
 	_ "mysql"
 	"strconv"
-	"time"
 )
 
 type MysqlStore struct {
@@ -24,7 +24,7 @@ func NewMysqlStore() *MysqlStore {
 	return mysqlStore
 }
 
-func (self *MysqlStore) Read(who int, maxId int64, limit int) []Message {
+func (self *MysqlStore) Read(who int, maxId int64, limit int) []common.Message {
 	rows, err := self.db.Query("SELECT msg_uid, msg_mid, msg_content, msg_type, msg_time, msg_from, msg_to, msg_group FROM message WHERE msg_uid=? AND msg_mid>? ORDER BY mid ASC LIMIT "+strconv.Itoa(limit), who, maxId)
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
@@ -32,7 +32,7 @@ func (self *MysqlStore) Read(who int, maxId int64, limit int) []Message {
 	}
 	defer rows.Close()
 
-	var ms []Message
+	var ms []common.Message
 	for rows.Next() {
 		var (
 			Mid     int
@@ -86,7 +86,7 @@ func (self *MysqlStore) Save(m *common.Message) bool {
 }
 
 func (self *MysqlStore) GetGroupMembers(groupId int) []int {
-	rows, err := self.db.Query("SELECT user FROM group WHERE group=?", groupId)
+	rows, err := self.db.Query("SELECT user_id FROM user_group WHERE group_id=?", groupId)
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
 		panic(err.Error())
