@@ -58,11 +58,11 @@ func (self *MS) ReadMessages(args *RArgs, reply *[]common.Message) error {
 }
 
 type GroupArgs struct {
-	groupId int
+	GroupId int
 }
 
 func (self *MS) GetGroupMembers(args *GroupArgs, reply *[]int) error {
-	*reply = store.GetGroupMembers(args.groupId)
+	*reply = store.GetGroupMembers(args.GroupId)
 	return nil
 }
 

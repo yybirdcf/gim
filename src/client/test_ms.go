@@ -14,7 +14,7 @@ type RArgs struct {
 }
 
 type GroupArgs struct {
-	groupId int
+	GroupId int
 }
 
 func main() {
@@ -61,7 +61,7 @@ func main() {
 	}
 
 	groupArgs := GroupArgs{
-		groupId: 1,
+		GroupId: 1,
 	}
 	var userIds []int
 	userIds = make([]int, 100)

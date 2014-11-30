@@ -25,7 +25,7 @@ func NewMysqlStore() *MysqlStore {
 }
 
 func (self *MysqlStore) Read(who int, maxId int64, limit int) []common.Message {
-	rows, err := self.db.Query("SELECT msg_uid, msg_mid, msg_content, msg_type, msg_time, msg_from, msg_to, msg_group FROM message WHERE msg_uid=? AND msg_mid>? ORDER BY mid ASC LIMIT "+strconv.Itoa(limit), who, maxId)
+	rows, err := self.db.Query("SELECT msg_uid, msg_mid, msg_content, msg_type, msg_time, msg_from, msg_to, msg_group FROM message WHERE msg_uid=? AND msg_mid>? ORDER BY msg_mid ASC LIMIT "+strconv.Itoa(limit), who, maxId)
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
 		panic(err.Error())
