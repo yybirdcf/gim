@@ -2,9 +2,9 @@ package main
 
 import (
 	"bufio"
-	"common"
 	"encoding/json"
 	"fmt"
+	"gim/common"
 	"io"
 	"net"
 	"strconv"
