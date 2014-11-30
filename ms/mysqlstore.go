@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"gim/common"
-	_ "mysql"
+	_ "github.com/go-sql-driver/mysql"
 	"strconv"
 )
 
