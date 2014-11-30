@@ -6,7 +6,6 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"net"
 	"net/rpc"
-	"sendsrv"
 	"strconv"
 	"sync"
 	"time"
