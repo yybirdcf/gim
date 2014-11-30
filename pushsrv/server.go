@@ -6,7 +6,7 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"net/http"
 	"net/rpc"
-	"sync"
+	"strconv"
 )
 
 const (
@@ -23,18 +23,7 @@ type PushSrv struct {
 }
 
 func (self *PushSrv) SendMsg(args *common.Message, reply *bool) error {
-	m := &Message{
-		Mid:     args.Mid,
-		Uid:     args.Uid,
-		Content: args.Content,
-		Type:    args.Type,
-		Time:    args.Time,
-		From:    args.From,
-		To:      args.To,
-		Group:   args.Group,
-	}
-
-	self.buf <- m
+	self.buf <- args
 	return nil
 }
 
@@ -59,7 +48,7 @@ func NewPushSrv() *PushSrv {
 				s := <-ps.buf
 				if s != nil {
 					//分发消息
-					dispathMsg(s)
+					dispatchMsg(s)
 				}
 			}
 		}()
@@ -70,7 +59,7 @@ func NewPushSrv() *PushSrv {
 
 //connect server or apns
 func dispatchMsg(m *common.Message) {
-	exist, _ := redClient.Get(USER_ONLINE_PREFIX + m.Uid)
+	exist, _ := redClient.Get(USER_ONLINE_PREFIX + strconv.Itoa(m.Uid))
 	if exist != nil {
 		var ok bool
 		connClient.Call("Server.SendMsg", *m, &ok)
