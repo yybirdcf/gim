@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"gim/common"
 	"io"
 	"net"
@@ -45,15 +46,15 @@ type Client struct {
 
 //客户端发送命令
 type ClientCmd struct {
-	cmd    string //命令类型
-	params string //参数&作为分隔符
+	Cmd    string //命令类型
+	Params string //参数&作为分隔符
 }
 
 type ClientResp struct {
-	retCode int
-	retType string
-	retMsg  string
-	retData interface{}
+	RetCode int
+	RetType string
+	RetMsg  string
+	RetData interface{}
 }
 
 //初始化一个客户端结构
@@ -119,9 +120,9 @@ func (self *Client) Read() {
 					continue
 				}
 
-				if clientCmd.cmd == CMD_MSG {
+				if clientCmd.Cmd == CMD_MSG {
 					//正常的用户消息
-					err = json.Unmarshal([]byte(clientCmd.params), &cm)
+					err = json.Unmarshal([]byte(clientCmd.Params), &cm)
 					if err != nil {
 						resp.retCode = -1
 						resp.retType = CMD_UNKNOW
@@ -174,7 +175,7 @@ func (self *Client) Read() {
 						continue
 					}
 
-				} else if clientCmd.cmd == CMD_AUTH {
+				} else if clientCmd.Cmd == CMD_AUTH {
 					//不需要认证
 					resp.retCode = 0
 					resp.retType = CMD_AUTH
@@ -184,7 +185,7 @@ func (self *Client) Read() {
 
 					str, _ := json.Marshal(resp)
 					self.out <- string(str)
-				} else if clientCmd.cmd == CMD_PING {
+				} else if clientCmd.Cmd == CMD_PING {
 					//客户端ping，返回pong
 					resp.retCode = 0
 					resp.retType = CMD_PING
@@ -206,12 +207,13 @@ func (self *Client) Read() {
 			} else {
 				//认证
 				err := json.Unmarshal(line, &clientCmd)
+				fmt.Printf("%v\n", clientCmd)
 				if err != nil {
 					panic(err.Error())
 				}
-				if clientCmd.cmd == CMD_AUTH {
+				if clientCmd.Cmd == CMD_AUTH {
 					//暂时没有认证过程,参数{uid}//{uid}&{token}
-					uid, _ := strconv.Atoi(clientCmd.params)
+					uid, _ := strconv.Atoi(clientCmd.Params)
 					self.id = uid
 					self.ready = CLIENT_READY
 					self.activating <- self

@@ -62,10 +62,10 @@ func (self *Server) listen() {
 				//获取客户端
 				client := self.clients[msg.Uid]
 				if client != nil {
-					resp.retCode = 0
-					resp.retType = CMD_MSG
-					resp.retMsg = "OK"
-					resp.retData = *msg
+					resp.RetCode = 0
+					resp.RetType = CMD_MSG
+					resp.RetMsg = "OK"
+					resp.RetData = *msg
 
 					client.lastAccTime = int(time.Now().Unix())
 					str, _ := json.Marshal(resp)
@@ -74,6 +74,7 @@ func (self *Server) listen() {
 			case msg := <-self.out:
 				//客户端需要发出去的消息
 				s, _ := json.Marshal(*msg)
+				fmt.Printf("%s\n", string(s))
 				redClient.Do("LPUSH", "msg_queue_0", string(s))
 			case conn := <-self.pending:
 				self.join(conn) //新客户端处理
@@ -140,6 +141,7 @@ func (self *Server) activate(client *Client) {
 		go func() {
 			for {
 				if msg := <-client.in; msg != nil {
+					fmt.Printf("%v\n", *msg)
 					self.out <- msg
 				}
 			}
