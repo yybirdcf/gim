@@ -22,9 +22,9 @@ func main() {
 
 	server := CreateServer()
 	server.Start()
+	server.StartRpc()
 	defer server.Stop()
 
-	StartRpc()
 	// init process
 	// sleep one second, let the listen start
 	time.Sleep(time.Second)
