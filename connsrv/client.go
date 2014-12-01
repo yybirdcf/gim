@@ -111,10 +111,10 @@ func (self *Client) Read() {
 				//已经认证通过，可以正常收发消息
 				err := json.Unmarshal(line, &clientCmd)
 				if err != nil {
-					resp.retCode = -1
-					resp.retType = CMD_UNKNOW
-					resp.retMsg = "解析消息失败"
-					resp.retData = nil
+					resp.RetCode = -1
+					resp.RetType = CMD_UNKNOW
+					resp.RetMsg = "解析消息失败"
+					resp.RetData = nil
 					str, _ := json.Marshal(resp)
 					self.out <- string(str)
 					continue
@@ -124,10 +124,10 @@ func (self *Client) Read() {
 					//正常的用户消息
 					err = json.Unmarshal([]byte(clientCmd.Params), &cm)
 					if err != nil {
-						resp.retCode = -1
-						resp.retType = CMD_UNKNOW
-						resp.retMsg = "解析消息失败"
-						resp.retData = nil
+						resp.RetCode = -1
+						resp.RetType = CMD_UNKNOW
+						resp.RetMsg = "解析消息失败"
+						resp.RetData = nil
 						str, _ := json.Marshal(resp)
 						self.out <- string(str)
 						continue
@@ -157,19 +157,19 @@ func (self *Client) Read() {
 						self.in <- m
 
 						//回写发送成功消息
-						resp.retCode = 0
-						resp.retType = CMD_MSG_ACK
-						resp.retMsg = "OK"
-						resp.retData = cm.UniqueId //用户客户端确认消息是否发送成功
+						resp.RetCode = 0
+						resp.RetType = CMD_MSG_ACK
+						resp.RetMsg = "OK"
+						resp.RetData = cm.UniqueId //用户客户端确认消息是否发送成功
 
 						self.lastAccTime = int(time.Now().Unix())
 						str, _ := json.Marshal(resp)
 						self.out <- string(str)
 					} else {
-						resp.retCode = -1
-						resp.retType = CMD_UNKNOW
-						resp.retMsg = "解析消息失败"
-						resp.retData = nil
+						resp.RetCode = -1
+						resp.RetType = CMD_UNKNOW
+						resp.RetMsg = "解析消息失败"
+						resp.RetData = nil
 						str, _ := json.Marshal(resp)
 						self.out <- string(str)
 						continue
@@ -177,30 +177,30 @@ func (self *Client) Read() {
 
 				} else if clientCmd.Cmd == CMD_AUTH {
 					//不需要认证
-					resp.retCode = 0
-					resp.retType = CMD_AUTH
-					resp.retMsg = "已经认证通过"
-					resp.retData = nil
+					resp.RetCode = 0
+					resp.RetType = CMD_AUTH
+					resp.RetMsg = "已经认证通过"
+					resp.RetData = nil
 					self.lastAccTime = int(time.Now().Unix())
 
 					str, _ := json.Marshal(resp)
 					self.out <- string(str)
 				} else if clientCmd.Cmd == CMD_PING {
 					//客户端ping，返回pong
-					resp.retCode = 0
-					resp.retType = CMD_PING
-					resp.retMsg = "PONG"
-					resp.retData = nil
+					resp.RetCode = 0
+					resp.RetType = CMD_PING
+					resp.RetMsg = "PONG"
+					resp.RetData = nil
 
 					self.lastAccTime = int(time.Now().Unix())
 					str, _ := json.Marshal(resp)
 					self.out <- string(str)
 				} else {
 					//未知的消息类型
-					resp.retCode = -1
-					resp.retType = CMD_UNKNOW
-					resp.retMsg = "未知的消息类型"
-					resp.retData = nil
+					resp.RetCode = -1
+					resp.RetType = CMD_UNKNOW
+					resp.RetMsg = "未知的消息类型"
+					resp.RetData = nil
 					str, _ := json.Marshal(resp)
 					self.out <- string(str)
 				}
@@ -218,19 +218,19 @@ func (self *Client) Read() {
 					self.ready = CLIENT_READY
 					self.activating <- self
 
-					resp.retCode = 0
-					resp.retType = CMD_AUTH
-					resp.retMsg = "认证成功"
-					resp.retData = nil
+					resp.RetCode = 0
+					resp.RetType = CMD_AUTH
+					resp.RetMsg = "认证成功"
+					resp.RetData = nil
 
 					go self.Write() //开启写goroute
 					str, _ := json.Marshal(resp)
 					self.out <- string(str)
 				} else {
-					resp.retCode = -1
-					resp.retType = CMD_UNKNOW
-					resp.retMsg = "未知的消息类型，需要认证"
-					resp.retData = nil
+					resp.RetCode = -1
+					resp.RetType = CMD_UNKNOW
+					resp.RetMsg = "未知的消息类型，需要认证"
+					resp.RetData = nil
 					str, _ := json.Marshal(resp)
 					self.out <- string(str)
 				}
@@ -239,6 +239,7 @@ func (self *Client) Read() {
 			self.Quit()
 		}
 	}
+
 }
 
 func (self *Client) Quit() {
