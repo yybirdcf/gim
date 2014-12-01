@@ -61,6 +61,10 @@ func main() {
 	//负责接收用户输入
 
 	for {
+		clc := ClientCmd{
+			Cmd:    "MSG",
+			Params: "",
+		}
 		cm := ClientMsg{
 			UniqueId: time.Nanosecond(),
 			Content:  "hello world",
@@ -68,8 +72,10 @@ func main() {
 			Type:     4,
 		}
 		str, _ := json.Marshal(cm)
+		clc.Params = string(str)
+		str2, _ := json.Marshal(clc)
 
-		connout.WriteString(string(str) + "\n")
+		connout.WriteString(string(str2) + "\n")
 		connout.Flush()
 
 		time.Sleep(1 * time.Second)
