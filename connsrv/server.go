@@ -16,6 +16,7 @@ import (
 var (
 	redClient     redis.Conn
 	sendSrvClient *rpc.Client
+	in            chan *common.Message
 )
 
 const (
@@ -30,15 +31,7 @@ type Server struct {
 	pending    chan net.Conn
 	quiting    chan *Client
 	activating chan *Client
-	in         chan *common.Message
 	out        chan *common.Message
-}
-
-//push server 调用的rpc服务，负责推送消息
-func (self *Server) SendMsg(args *common.Message, reply *bool) error {
-	self.in <- args
-
-	return nil
 }
 
 func CreateServer() *Server {
@@ -63,7 +56,7 @@ func (self *Server) listen() {
 	go func() {
 		for {
 			select {
-			case msg := <-self.in:
+			case msg := <-in:
 				//新消息处理
 				//获取客户端
 				client := self.clients[msg.Uid]
@@ -180,9 +173,24 @@ func (self *Server) Start() {
 	}()
 }
 
-func (self *Server) StartRpc() {
+func (self *Server) Stop() {
+	self.listener.Close()
+}
+
+type ConnRpcServer struct {
+}
+
+//push server 调用的rpc服务，负责推送消息
+func (self *ConnRpcServer) SendMsg(args *common.Message, reply *bool) error {
+	in <- args
+
+	return nil
+}
+
+func StartRpc() {
 	go func() {
-		rpc.Register(self)
+		rpcSrv := &RpcServer{}
+		rpc.Register(rpcSrv)
 		rpc.HandleHTTP()
 
 		err := http.ListenAndServe(Conf.RcpBind, nil)
@@ -190,8 +198,4 @@ func (self *Server) StartRpc() {
 			fmt.Printf("connect server rpc error: %s\n", err.Error())
 		}
 	}()
-}
-
-func (self *Server) Stop() {
-	self.listener.Close()
 }
