@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"gim/common"
 	"github.com/garyburd/redigo/redis"
-	"net/http"
 	"net/rpc"
 )
 
@@ -37,12 +36,12 @@ func StartSendSrv() {
 	for i := 0; i < Conf.MaxThread; i++ {
 		go func() {
 			for {
-				m := redis.String(redClient.Do("RPOP", "msg_queue_0"))
-				if m != nil {
+				m, err := redis.String(redClient.Do("RPOP", "msg_queue_0"))
+				if err == nil {
 					var msg common.Message
 					err = json.Unmarshal([]byte(m), &msg)
 					if err == nil {
-						HandleServerMsg(msg)
+						HandleServerMsg(&msg)
 					}
 				}
 			}
