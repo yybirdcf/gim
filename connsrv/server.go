@@ -37,6 +37,7 @@ type Server struct {
 func CreateServer() *Server {
 	server := &Server{
 		clients:    make(map[int]*Client),
+		lock:       new(sync.RWMutex),
 		pending:    make(chan net.Conn),
 		quiting:    make(chan *Client),
 		activating: make(chan *Client),
