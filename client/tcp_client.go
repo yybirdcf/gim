@@ -2,10 +2,17 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
 )
+
+//客户端发送命令
+type ClientCmd struct {
+	cmd    string //命令类型
+	params string //参数&作为分隔符
+}
 
 func main() {
 	var ip = "127.0.0.1:8280"
@@ -40,4 +47,13 @@ func main() {
 			connout.Flush()
 		}
 	}
+
+	//发起认证
+	cc := ClientCmd{
+		cmd:    "AUTH",
+		params: "1000",
+	}
+	str, _ := json.Marshal(cc)
+	connout.WriteString(string(str) + "\n")
+	connout.Flush()
 }
