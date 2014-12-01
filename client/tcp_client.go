@@ -6,12 +6,20 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 )
 
 //客户端发送命令
 type ClientCmd struct {
 	Cmd    string //命令类型
 	Params string //参数&作为分隔符
+}
+
+type ClientMsg struct {
+	UniqueId int64  //nano sec可以唯一区分消息
+	Content  string //消息内容
+	To       int    //发送给的目标
+	Type     int    //消息类型,个人消息，还是群组消息
 }
 
 func main() {
@@ -53,9 +61,17 @@ func main() {
 	//负责接收用户输入
 
 	for {
-		if line, _, err := stdin.ReadLine(); err == nil {
-			connout.WriteString(string(line) + "\n")
-			connout.Flush()
+		cm := ClientMsg{
+			UniqueId: time.Nanosecond(),
+			Content:  "hello world",
+			To:       10001,
+			Type:     4,
 		}
+		str, _ := json.Marshal(cm)
+
+		connout.WriteString(string(str) + "\n")
+		connout.Flush()
+
+		time.Sleep(1 * time.Second)
 	}
 }

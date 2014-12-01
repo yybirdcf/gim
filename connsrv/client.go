@@ -110,6 +110,7 @@ func (self *Client) Read() {
 			if self.ready == CLIENT_READY {
 				//已经认证通过，可以正常收发消息
 				err := json.Unmarshal(line, &clientCmd)
+				fmt.Printf("%v\n", clientCmd)
 				if err != nil {
 					resp.RetCode = -1
 					resp.RetType = CMD_UNKNOW
