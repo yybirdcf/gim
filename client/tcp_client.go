@@ -40,13 +40,15 @@ func main() {
 		}
 	}()
 
-	//主进程负责接收用户输入
-	for {
-		if line, _, err := stdin.ReadLine(); err == nil {
-			connout.WriteString(string(line) + "\n")
-			connout.Flush()
+	//负责接收用户输入
+	go func() {
+		for {
+			if line, _, err := stdin.ReadLine(); err == nil {
+				connout.WriteString(string(line) + "\n")
+				connout.Flush()
+			}
 		}
-	}
+	}()
 
 	//发起认证
 	cc := ClientCmd{
