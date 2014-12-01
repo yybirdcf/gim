@@ -24,7 +24,7 @@ func getUserMsgId(userId int) int {
 }
 
 //发过来消息字符串
-func HandleServerMsg(ss *SendSrv, msg *common.Message) {
+func HandleServerMsg(msg *common.Message) {
 	//点对点消息
 	if msg.Type == common.MESSAGE_TYPE_USER {
 		//获取发送者消息空间ID
@@ -59,8 +59,8 @@ func HandleServerMsg(ss *SendSrv, msg *common.Message) {
 		}
 
 		//将生成的消息给MS存储
-		ss.msgPool <- &mFrom
-		ss.msgPool <- &mTo
+		msgPool <- &mFrom
+		msgPool <- &mTo
 	} else if msg.Type == common.MESSAGE_TYPE_GROUP {
 		//群组消息
 		//获取群组成员
@@ -85,7 +85,7 @@ func HandleServerMsg(ss *SendSrv, msg *common.Message) {
 			To:      msg.To,
 			Group:   msg.Group,
 		}
-		ss.msgPool <- &mFrom
+		msgPool <- &mFrom
 		for i := 0; i < len(members); i++ {
 			//获取接收者消息空间ID
 			recMaxId := getUserMsgId(members[i])
@@ -107,7 +107,7 @@ func HandleServerMsg(ss *SendSrv, msg *common.Message) {
 				panic(err.Error())
 			}
 			//存储消息
-			ss.msgPool <- &mTo
+			msgPool <- &mTo
 		}
 	} else if msg.Type == common.MESSAGE_TYPE_SUB {
 

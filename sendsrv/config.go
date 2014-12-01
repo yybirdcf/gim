@@ -5,7 +5,6 @@ import (
 )
 
 type Config struct {
-	TcpBind   string
 	PidFile   string
 	User      string
 	Dir       string
@@ -21,7 +20,6 @@ var (
 
 func InitConfig() error {
 	Conf = &Config{
-		TcpBind:   "127.0.0.1:8380",
 		PidFile:   "/tmp/gim-sendsrv.pid",
 		User:      "nobody nobody",
 		Dir:       "./",

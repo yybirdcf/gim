@@ -54,13 +54,6 @@ func CreateServer() *Server {
 	conn, _ := redis.Dial("tcp", Conf.Redis)
 	redClient = conn
 
-	client, err := rpc.DialHTTP("tcp", Conf.SendSrvTcp)
-	if err != nil {
-		panic(err.Error())
-		return nil
-	}
-	sendSrvClient = client
-
 	server.listen()
 	return server
 }
@@ -86,12 +79,8 @@ func (self *Server) listen() {
 				}
 			case msg := <-self.out:
 				//客户端需要发出去的消息
-				//rpc发送给send srv
-				var reply bool
-				err := sendSrvClient.Call("SendSrv.SendMsg", *msg, reply)
-				if err != nil {
-					panic(err.Error())
-				}
+				s := string(json.Marshal(*msg))
+				redClient.Do("LPUSH", "msg_queue_0", s)
 			case conn := <-self.pending:
 				self.join(conn) //新客户端处理
 			case client := <-self.quiting:

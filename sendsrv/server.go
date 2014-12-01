@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"gim/common"
 	"github.com/garyburd/redigo/redis"
@@ -12,31 +13,10 @@ var (
 	msClient      *rpc.Client
 	redClient     redis.Conn
 	pushSrvClient *rpc.Client
+	msgPool       chan *common.Message
 )
 
-type SendSrv struct {
-	buf     chan *common.Message
-	msgPool chan *common.Message
-}
-
-func NewSendSrv() *SendSrv {
-
-	ss := &SendSrv{
-		buf:     make(chan *common.Message, 2048),
-		msgPool: make(chan *common.Message, 2048),
-	}
-
-	for i := 0; i < Conf.MaxThread; i++ {
-		go func() {
-			for {
-				s := <-ss.buf
-				if s != nil {
-					HandleServerMsg(ss, s)
-				}
-			}
-		}()
-	}
-
+func StartSendSrv() {
 	client, err := rpc.DialHTTP("tcp", Conf.MS)
 	if err != nil {
 		panic(err.Error())
@@ -51,9 +31,27 @@ func NewSendSrv() *SendSrv {
 
 	conn, _ := redis.Dial("tcp", Conf.Redis)
 	redClient = conn
+
+	msgPool = make(chan *common.Message, 4096)
+
+	for i := 0; i < Conf.MaxThread; i++ {
+		go func() {
+			for {
+				m := redis.String(redClient.Do("RPOP", "msg_queue_0"))
+				if m != nil {
+					var msg common.Message
+					err = json.Unmarshal([]byte(m), &msg)
+					if err == nil {
+						HandleServerMsg(msg)
+					}
+				}
+			}
+		}()
+	}
+
 	go func() {
 		for {
-			if m := <-ss.msgPool; m != nil {
+			if m := <-msgPool; m != nil {
 				//MS落地存储
 				var success bool
 				err = msClient.Call("MS.SaveMessage", *m, &success)
@@ -63,24 +61,4 @@ func NewSendSrv() *SendSrv {
 			}
 		}
 	}()
-
-	return ss
-}
-
-func (self *SendSrv) SendMsg(m *common.Message, reply *bool) error {
-	if m != nil {
-		self.buf <- m
-	}
-	return nil
-}
-
-func StartSendSrv() {
-	ss := NewSendSrv()
-	rpc.Register(ss)
-	rpc.HandleHTTP()
-
-	err := http.ListenAndServe(Conf.TcpBind, nil)
-	if err != nil {
-		fmt.Printf("sendsrv rpc error: %s\n", err.Error())
-	}
 }

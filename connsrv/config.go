@@ -6,9 +6,7 @@ type Config struct {
 	User       string
 	Dir        string
 	MaxClients int
-	SendSrvTcp string
 	RcpBind    string
-	MS         string
 	Redis      string
 }
 
@@ -23,9 +21,7 @@ func InitConfig() error {
 		User:       "nobody nobody",
 		Dir:        "./",
 		MaxClients: 50,
-		SendSrvTcp: "127.0.0.1:8380",
 		RcpBind:    "127.0.0.1:8285",
-		MS:         "127.0.0.1:8680",
 		Redis:      "127.0.0.1:6379",
 	}
 
