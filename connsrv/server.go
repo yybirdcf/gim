@@ -40,10 +40,10 @@ func CreateServer() *Server {
 		pending:    make(chan net.Conn),
 		quiting:    make(chan *Client),
 		activating: make(chan *Client),
-		in:         make(chan *common.Message),
 		out:        make(chan *common.Message),
 	}
 
+	in = make(chan *common.Message)
 	conn, _ := redis.Dial("tcp", Conf.Redis)
 	redClient = conn
 
@@ -189,7 +189,7 @@ func (self *ConnRpcServer) SendMsg(args *common.Message, reply *bool) error {
 
 func StartRpc() {
 	go func() {
-		rpcSrv := &RpcServer{}
+		rpcSrv := &ConnRpcServer{}
 		rpc.Register(rpcSrv)
 		rpc.HandleHTTP()
 
