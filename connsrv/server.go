@@ -79,8 +79,8 @@ func (self *Server) listen() {
 				}
 			case msg := <-self.out:
 				//客户端需要发出去的消息
-				s := string(json.Marshal(*msg))
-				redClient.Do("LPUSH", "msg_queue_0", s)
+				s, _ := json.Marshal(*msg)
+				redClient.Do("LPUSH", "msg_queue_0", string(s))
 			case conn := <-self.pending:
 				self.join(conn) //新客户端处理
 			case client := <-self.quiting:
