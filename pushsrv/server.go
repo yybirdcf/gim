@@ -67,15 +67,15 @@ func NewPushSrv() *PushSrv {
 //connect server or apns
 func dispatchMsg(m *common.Message) {
 	//用户是否在线
-	exist, _ := redClient.Do("GET", USER_ONLINE_PREFIX+strconv.Itoa(m.Uid))
+	exist, _ := redis.Int(redClient.Do("GET", USER_ONLINE_PREFIX+strconv.Itoa(m.Uid)))
 	//用户长连接机器是否在可用机器列表
-	host, _ := redClient.Do("GET", USER_ONLINE_HOST_PREFIX+strconv.Itoa(m.Uid))
-	if exist != nil && host != nil && avalConnClient[host] {
-		var ok bool
-		connClient = avalConnClient[host]
+	host, _ := redis.String(redClient.Do("GET", USER_ONLINE_HOST_PREFIX+strconv.Itoa(m.Uid)))
+	var ok bool
+	connClient, ok = avalConnClient[host]
+	if exist > 0 && ok {
 		err := connClient.Call("ConnRpcServer.SendMsg", *m, &ok)
 		if err != nil {
-			panic(err.Error())
+			fmt.Printf("call conn server rpc failed %s\n", err.Error())
 		}
 	} else {
 		//apns

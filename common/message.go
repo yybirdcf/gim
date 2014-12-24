@@ -37,7 +37,10 @@ func MakeMessageRecycler() (get, put chan *Message) {
 		queue := new(list.List)
 		for {
 			if queue.Len() == 0 {
-				queue.PushFront(&Message{})
+				queue.PushFront(MessageQueued{
+					when:    time.Now(),
+					message: &Message{},
+				})
 			}
 
 			ct := queue.Front()
