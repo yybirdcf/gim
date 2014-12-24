@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"gim/common"
@@ -23,11 +24,17 @@ const (
 	CMD_MSG     = "MSG"
 	CMD_MSG_ACK = "MSGACK"
 	CMD_PING    = "PING"
+	CMD_PONG    = "PONG"
 	CMD_AUTH    = "AUTH"
 	CMD_UNKNOW  = "UNKOWN"
 
 	CLIENT_INIT  = 0
 	CLIENT_READY = 1
+
+	ERR_CODE_MSG_FORMAT      = 1000
+	ERR_CODE_MSG_UNKNOW_TYPE = 1001
+	ERR_AUTH_FAILED          = 1002
+	ERR_NEED_AUTH            = 1003
 )
 
 //每有一个客户端连接进来，就产生一个Client实例
@@ -42,6 +49,7 @@ type Client struct {
 	activating  chan *Client //激活
 	ready       int          //0未初始化，1正常初始化
 	lastAccTime int          //最近一次通信时间
+	quited      bool         //退出
 }
 
 //客户端发送命令
@@ -58,79 +66,93 @@ type ClientResp struct {
 }
 
 //初始化一个客户端结构
-func CreateClient(conn net.Conn) *Client {
-	writer := bufio.NewWriter(conn)
-	reader := bufio.NewReader(conn)
-
+func CreateClient() *Client {
 	client := &Client{
-		conn:        conn,
-		out:         make(chan string),
-		writer:      writer,
-		in:          make(chan *common.Message),
-		reader:      reader,
-		quiting:     make(chan *Client),
-		activating:  make(chan *Client),
-		lastAccTime: int(time.Now().Unix()),
-		ready:       CLIENT_INIT,
+		out:        make(chan string),
+		in:         make(chan *common.Message),
+		quiting:    make(chan *Client),
+		activating: make(chan *Client),
 	}
 
-	client.Listen()
 	return client
+}
+
+func (self *Client) Init(conn net.Conn) {
+	self.writer = bufio.NewWriter(conn)
+	self.reader = bufio.NewReader(conn)
+
+	self.conn = conn
+	self.lastAccTime = int(time.Now().Unix())
+	self.ready = CLIENT_INIT
+	self.quited = false
+	self.id = 0
+
+	self.Listen()
 }
 
 //启动gorouting处理消息读
 func (self *Client) Listen() {
 	go self.Read()
+	go self.Write() //开启写goroute
 }
 
 //处理写缓冲
 func (self *Client) Write() {
 	for m := range self.out {
+		if self.quited {
+			return
+		}
+
 		if _, err := self.writer.WriteString(m + "\n"); err != nil {
-			self.Quit()
 			return
 		}
 
 		if err := self.writer.Flush(); err != nil {
-			self.Quit()
 			return
 		}
 	}
+}
+
+func RetJson(retCode int, retType string, retMsg string, retData interface{}) string {
+	resp := ClientResp{
+		RetCode: retCode,
+		RetType: retType,
+		RetMsg:  retMsg,
+		RetData: retData,
+	}
+
+	str, _ := json.Marshal(resp)
+	return string(str)
 }
 
 //处理客户端读
 //认证通过以后才能正常收发消息
 func (self *Client) Read() {
 	var clientCmd ClientCmd
-	var resp ClientResp
 	var cm ClientMsg
 
 	for {
-		if line, _, err := self.reader.ReadLine(); err == nil {
+		if self.quited {
+			return
+		}
+
+		if line, err := self.reader.ReadBytes('\n'); err == nil {
+			line = bytes.TrimRight(line, "\r\n")
+			err := json.Unmarshal(line, &clientCmd)
+			if err != nil {
+				ret := RetJson(ERR_CODE_MSG_FORMAT, CMD_UNKNOW, "消息格式错误", nil)
+				self.out <- ret
+				continue
+			}
+
 			if self.ready == CLIENT_READY {
 				//已经认证通过，可以正常收发消息
-				err := json.Unmarshal(line, &clientCmd)
-				fmt.Printf("%v\n", clientCmd)
-				if err != nil {
-					resp.RetCode = -1
-					resp.RetType = CMD_UNKNOW
-					resp.RetMsg = "解析消息失败"
-					resp.RetData = nil
-					str, _ := json.Marshal(resp)
-					self.out <- string(str)
-					continue
-				}
-
-				if clientCmd.Cmd == CMD_MSG {
-					//正常的用户消息
+				switch clientCmd.Cmd {
+				case CMD_MSG:
 					err = json.Unmarshal([]byte(clientCmd.Params), &cm)
 					if err != nil {
-						resp.RetCode = -1
-						resp.RetType = CMD_UNKNOW
-						resp.RetMsg = "解析消息失败"
-						resp.RetData = nil
-						str, _ := json.Marshal(resp)
-						self.out <- string(str)
+						ret := RetJson(ERR_CODE_MSG_FORMAT, CMD_UNKNOW, "消息格式错误", nil)
+						self.out <- ret
 						continue
 					}
 
@@ -144,109 +166,127 @@ func (self *Client) Read() {
 							to = 0
 						}
 
-						m := &common.Message{
-							Mid:     0,
-							Uid:     0,
-							Content: cm.Content,
-							Type:    cm.Type,
-							Time:    int(time.Now().Unix()),
-							From:    self.id,
-							To:      to,
-							Group:   group,
-						}
+						m := <-getMsg
+						m.Mid = 0
+						m.Uid = 0
+						m.Content = cm.Content
+						m.Type = cm.Type
+						m.Time = int(time.Now().Unix())
+						m.From = self.id
+						m.To = to
+						m.Group = group
 
 						self.in <- m
 
-						//回写发送成功消息
-						resp.RetCode = 0
-						resp.RetType = CMD_MSG_ACK
-						resp.RetMsg = "OK"
-						resp.RetData = cm.UniqueId //用户客户端确认消息是否发送成功
-
 						self.lastAccTime = int(time.Now().Unix())
-						str, _ := json.Marshal(resp)
-						self.out <- string(str)
+						//回写发送成功消息
+						ret := RetJson(0, CMD_MSG_ACK, "OK", cm.UniqueId)
+						self.out <- ret
 					} else {
-						resp.RetCode = -1
-						resp.RetType = CMD_UNKNOW
-						resp.RetMsg = "解析消息失败"
-						resp.RetData = nil
-						str, _ := json.Marshal(resp)
-						self.out <- string(str)
+						ret := RetJson(ERR_CODE_MSG_UNKNOW_TYPE, CMD_UNKNOW, "未知消息的消息类型", nil)
+						self.out <- ret
 						continue
 					}
-
-				} else if clientCmd.Cmd == CMD_AUTH {
-					//不需要认证
-					resp.RetCode = 0
-					resp.RetType = CMD_AUTH
-					resp.RetMsg = "已经认证通过"
-					resp.RetData = nil
+				case CMD_AUTH:
 					self.lastAccTime = int(time.Now().Unix())
-
-					str, _ := json.Marshal(resp)
-					self.out <- string(str)
-				} else if clientCmd.Cmd == CMD_PING {
-					//客户端ping，返回pong
-					resp.RetCode = 0
-					resp.RetType = CMD_PING
-					resp.RetMsg = "PONG"
-					resp.RetData = nil
-
+					ret := RetJson(0, CMD_AUTH, "已经认证通过", nil)
+					self.out <- ret
+				case CMD_PING:
 					self.lastAccTime = int(time.Now().Unix())
-					str, _ := json.Marshal(resp)
-					self.out <- string(str)
-				} else {
-					//未知的消息类型
-					resp.RetCode = -1
-					resp.RetType = CMD_UNKNOW
-					resp.RetMsg = "未知的消息类型"
-					resp.RetData = nil
-					str, _ := json.Marshal(resp)
-					self.out <- string(str)
+					ret := RetJson(0, CMD_PONG, "PONG", nil)
+					self.out <- ret
+				case CMD_PONG:
+					//服务器发出的心跳响应
+					self.lastAccTime = int(time.Now().Unix())
+				default:
+					ret := RetJson(ERR_CODE_MSG_UNKNOW_TYPE, CMD_UNKNOW, "未知的消息类型", nil)
+					self.out <- ret
 				}
 			} else {
 				//认证
-				err := json.Unmarshal(line, &clientCmd)
-				fmt.Printf("%v\n", clientCmd)
-				if err != nil {
-					panic(err.Error())
-				}
 				if clientCmd.Cmd == CMD_AUTH {
 					//暂时没有认证过程,参数{uid}//{uid}&{token}
+					//认证失败，退出
 					uid, _ := strconv.Atoi(clientCmd.Params)
 					self.id = uid
 					self.ready = CLIENT_READY
 					self.activating <- self
 
-					resp.RetCode = 0
-					resp.RetType = CMD_AUTH
-					resp.RetMsg = "认证成功"
-					resp.RetData = nil
-
-					go self.Write() //开启写goroute
-					str, _ := json.Marshal(resp)
-					self.out <- string(str)
+					ret := RetJson(0, CMD_AUTH, "认证成功", nil)
+					self.out <- ret
 				} else {
-					resp.RetCode = -1
-					resp.RetType = CMD_UNKNOW
-					resp.RetMsg = "未知的消息类型，需要认证"
-					resp.RetData = nil
-					str, _ := json.Marshal(resp)
-					self.out <- string(str)
+					ret := RetJson(ERR_NEED_AUTH, CMD_UNKNOW, "未知的消息类型，需要认证", nil)
+					self.out <- ret
 				}
 			}
 		} else if err == io.EOF {
 			self.Quit()
+			break
+		} else {
+			//读取数据失败，可能连接错误，活着连接关闭等等
+			fmt.Printf("%v\n", err.Error())
+			self.Quit()
+			break
 		}
 	}
 
 }
 
+//定期发送心跳包到客户端
+func (self *Client) KeepCliAlive() {
+	go func() {
+		for {
+			if self.quited {
+				return
+			}
+
+			time.Sleep(time.Second * 3)
+
+			ret := RetJson(0, CMD_PING, "", nil)
+			self.out <- ret
+		}
+	}()
+}
+
+//自检
+func (self *Client) CheckSelf() {
+	go func() {
+		for {
+			if self.quited {
+				return
+			}
+			time.Sleep(time.Second * 30)
+			//超过60秒，认为该连接已断开
+			if self.lastAccTime+60 < int(time.Now().Unix()) {
+				self.Quit()
+			}
+		}
+	}()
+}
+
 func (self *Client) Quit() {
+	if self.quited {
+		return
+	}
+
 	self.quiting <- self
 }
 
 func (self *Client) Close() {
-	self.conn.Close()
+	if self.conn != nil {
+		fmt.Printf("%d close\n", self.id)
+		self.conn.Close()
+	}
+
+	self.writer = nil
+	self.reader = nil
+	self.conn = nil
+	self.quited = true
+}
+
+func (self *Client) ShutDown() {
+	close(self.in)
+	close(self.out)
+	close(self.activating)
+	close(self.quiting)
 }

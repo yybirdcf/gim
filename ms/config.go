@@ -1,12 +1,14 @@
 package main
 
 type Config struct {
-	TcpBind string
-	PidFile string
-	User    string
-	Dir     string
-	Store   string
-	Dsn     string
+	TcpBind   string
+	PidFile   string
+	User      string
+	Dir       string
+	Store     string
+	Dsn       string
+	ZooKeeper []string //sendsrv 和ms servers
+	ZkRoot    string
 }
 
 var (
@@ -21,6 +23,10 @@ func InitConfig() error {
 		Dir:     "./",
 		Store:   "mysql",
 		Dsn:     "root:1160616612@tcp(127.0.0.1:3306)/chat?charset=utf8",
+		ZooKeeper: []string{
+			"127.0.0.1:2181",
+		},
+		ZkRoot: "/ms",
 	}
 
 	return nil

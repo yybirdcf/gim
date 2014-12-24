@@ -1,13 +1,35 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"gim/common"
+	"os"
 	"runtime"
+	"runtime/pprof"
 	"time"
 )
 
 func main() {
+	var cpuprofile = flag.String("cpuprofile", "", "--cpuprofile=<.prof file path>")
+	var memprofile = flag.String("memprofile", "", "--memprofile=<.prof file path>")
+	flag.Parse()
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			panic(err.Error())
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+	if *memprofile != "" {
+		f, err := os.Create(*memprofile)
+		if err != nil {
+			panic(err.Error())
+		}
+		pprof.WriteHeapProfile(f)
+		defer f.Close()
+	}
 
 	fmt.Printf("connect server start\n")
 

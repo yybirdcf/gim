@@ -1,0 +1,2 @@
+1. sudo /Users/chenhaipeng/Downloads/zookeeper-3.4.6/bin/zkServer.sh restart
+2. redis-server /Users/chenhaipeng/Downloads/redis-2.8.18/redis.conf

@@ -3,6 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"gim/common"
+	"github.com/garyburd/redigo/redis"
+	"github.com/samuel/go-zookeeper/zk"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -14,7 +17,9 @@ const (
 )
 
 var (
-	sendSrvClient *rpc.Client
+	msClient  *rpc.Client
+	zkConn    *zk.Conn
+	redClient redis.Conn
 )
 
 // StartHTTP start listen http.
@@ -24,6 +29,8 @@ func StartHTTP() {
 	// 1.0
 	httpServeMux.HandleFunc("/public/send", SendPublicMsg)
 	httpServeMux.HandleFunc("/sub/send", SendSubMsg)
+	httpServeMux.HandleFunc("/get/connectserver", GetAvalConnSrv)
+	httpServeMux.HandleFunc("/get/offlinemsg", GetOfflineMsgs)
 
 	for _, bind := range Conf.HttpBind {
 		fmt.Printf("start http listen addr:\"%s\"", bind)
@@ -31,13 +38,21 @@ func StartHTTP() {
 	}
 
 	//开启send srv rpc
-	client, err := rpc.DialHTTP("tcp", Conf.SendSrv)
+	client, err := rpc.DialHTTP("tcp", Conf.Ms)
 	if err != nil {
 		panic(err.Error())
-		fmt.Printf("web start rpc failed, connect %s failed\n", Conf.SendSrv)
+		fmt.Printf("web start rpc failed, connect %s failed\n", Conf.Ms)
 		return
 	}
-	sendSrvClient = client
+	msClient = client
+
+	conn, err := redis.Dial("tcp", Conf.Redis)
+	if err != nil {
+		panic(err.Error())
+	}
+	redClient = conn
+
+	zkConn = common.ZkConnect(Conf.ZooKeeper)
 }
 
 func httpListen(mux *http.ServeMux, bind string) {

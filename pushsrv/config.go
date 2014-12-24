@@ -5,14 +5,17 @@ import (
 )
 
 type Config struct {
-	TcpBind   string
-	PidFile   string
-	User      string
-	Dir       string
-	MaxThread int
-	MS        string
-	ConnSrv   string
-	Redis     string
+	TcpBind       string
+	PidFile       string
+	User          string
+	Dir           string
+	MaxThread     int
+	ConnSrv       string
+	Redis         string
+	ZooKeeper     []string //sendsrv 和push servers
+	ZkRoot        string
+	ConnZooKeeper []string
+	ConnZkRoot    string
 }
 
 var (
@@ -26,9 +29,16 @@ func InitConfig() error {
 		User:      "nobody nobody",
 		Dir:       "./",
 		MaxThread: runtime.NumCPU(),
-		MS:        "127.0.0.1:8680",
-		ConnSrv:   "127.0.0.1:8280",
+		ConnSrv:   "127.0.0.1:8285",
 		Redis:     "127.0.0.1:6379",
+		ZooKeeper: []string{
+			"127.0.0.1:2181",
+		},
+		ConnZooKeeper: []string{
+			"127.0.0.1:2181",
+		},
+		ZkRoot:     "/pushsrv",
+		ConnZkRoot: "/connsrv",
 	}
 
 	return nil

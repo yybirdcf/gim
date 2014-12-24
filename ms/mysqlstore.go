@@ -89,7 +89,7 @@ func (self *MysqlStore) GetGroupMembers(groupId int) []int {
 	rows, err := self.db.Query("SELECT user_id FROM user_group WHERE group_id=?", groupId)
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
-		panic(err.Error())
+		return nil
 	}
 	defer rows.Close()
 
@@ -106,6 +106,6 @@ func (self *MysqlStore) GetGroupMembers(groupId int) []int {
 
 		members = append(members, user)
 	}
-
+	fmt.Printf("members:%v\n", members)
 	return members
 }

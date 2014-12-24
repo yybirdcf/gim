@@ -8,6 +8,8 @@ type Config struct {
 	MaxClients int
 	RcpBind    string
 	Redis      string
+	ZooKeeper  []string //conn srvs
+	ZkRoot     string
 }
 
 var (
@@ -23,6 +25,10 @@ func InitConfig() error {
 		MaxClients: 50,
 		RcpBind:    "127.0.0.1:8285",
 		Redis:      "127.0.0.1:6379",
+		ZooKeeper: []string{
+			"127.0.0.1:2181",
+		},
+		ZkRoot: "/connsrv",
 	}
 
 	return nil

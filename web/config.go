@@ -1,11 +1,14 @@
 package main
 
 type Config struct {
-	HttpBind []string
-	PidFile  string
-	User     string
-	Dir      string
-	SendSrv  string
+	HttpBind  []string
+	PidFile   string
+	User      string
+	Dir       string
+	Redis     string
+	Ms        string
+	ZooKeeper []string //conn srvs
+	ZkRoot    string
 }
 
 var (
@@ -18,7 +21,12 @@ func InitConfig() error {
 		PidFile:  "/tmp/gim-web.pid",
 		User:     "nobody nobody",
 		Dir:      "./",
-		SendSrv:  "127.0.0.1:8380",
+		Ms:       "127.0.0.1:8680",
+		Redis:    "127.0.0.1:6379",
+		ZooKeeper: []string{
+			"127.0.0.1:2181",
+		},
+		ZkRoot: "/connsrv",
 	}
 
 	return nil

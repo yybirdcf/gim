@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"gim/common"
+	"github.com/samuel/go-zookeeper/zk"
 	"net/http"
 	"net/rpc"
 )
@@ -16,6 +17,10 @@ type RArgs struct {
 type MS struct {
 	buf chan *common.Message
 }
+
+var (
+	zkConn *zk.Conn
+)
 
 func NewMS() *MS {
 
@@ -67,12 +72,44 @@ func (self *MS) GetGroupMembers(args *GroupArgs, reply *[]int) error {
 }
 
 func StartMs() {
+
 	ms := NewMS()
 	rpc.Register(ms)
 	rpc.HandleHTTP()
 
-	err := http.ListenAndServe(Conf.TcpBind, nil)
-	if err != nil {
-		fmt.Printf("ms rpc error: %s\n", err.Error())
-	}
+	go func() {
+		err := http.ListenAndServe(Conf.TcpBind, nil)
+		if err != nil {
+			fmt.Printf("ms rpc error: %s\n", err.Error())
+		}
+	}()
+
+	//服务器初始化完成以后，开启zookeeper
+	zkConn = common.ZkConnect(Conf.ZooKeeper)
+	common.ZkCreateRoot(zkConn, Conf.ZkRoot)
+	//为当前ms服务器创建一个节点，加入到ms集群中
+	path := Conf.ZkRoot + "/" + Conf.TcpBind
+	common.ZkCreateTempNode(zkConn, path)
+	go func() {
+		exist, _, watch, err := zkConn.ExistsW(path)
+		if err != nil {
+			//发生错误，当前节点退出
+			fmt.Printf("%s occur error\n", path)
+			common.KillSelf()
+		}
+
+		if !exist {
+			//节点不存在了
+			fmt.Printf("%s not exist\n", path)
+			common.KillSelf()
+		}
+
+		event := <-watch
+		fmt.Printf("%s receiver a event %v\n", path, event)
+	}()
+}
+
+func CloseMs() {
+	zkConn.Delete(Conf.ZkRoot+"/"+Conf.TcpBind, 0)
+	zkConn.Close()
 }

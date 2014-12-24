@@ -9,9 +9,10 @@ type Config struct {
 	User      string
 	Dir       string
 	MaxThread int
-	MS        string
 	Redis     string
-	PushSrv   string
+	ZooKeeper []string
+	MsZkRoot  string
+	PsZkRoot  string
 }
 
 var (
@@ -24,9 +25,12 @@ func InitConfig() error {
 		User:      "nobody nobody",
 		Dir:       "./",
 		MaxThread: runtime.NumCPU(),
-		MS:        "127.0.0.1:8680",
 		Redis:     "127.0.0.1:6379",
-		PushSrv:   "127.0.0.1:8980",
+		ZooKeeper: []string{
+			"127.0.0.1:2181",
+		},
+		MsZkRoot: "/ms",
+		PsZkRoot: "/pushsrv",
 	}
 
 	return nil

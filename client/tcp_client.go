@@ -22,6 +22,13 @@ type ClientMsg struct {
 	Type     int    //消息类型,个人消息，还是群组消息
 }
 
+type Resp struct {
+	RetCode int
+	RetType string
+	RetMsg  string
+	RetData interface{}
+}
+
 func main() {
 	var ip = "127.0.0.1:8280"
 	fmt.Printf("start to connect %s\n", ip)
@@ -33,17 +40,37 @@ func main() {
 
 	defer conn.Close()
 
-	stdin := bufio.NewReader(os.Stdin)
+	// stdin := bufio.NewReader(os.Stdin)
 	stdout := bufio.NewWriter(os.Stdout)
 	connin := bufio.NewReader(conn)
 	connout := bufio.NewWriter(conn)
 
 	//gorouting负责接收服务器消息
 	go func() {
+		var resp Resp
 		for {
 			if line, _, err := connin.ReadLine(); err == nil {
+				//如果是服务器ping，则需要回复，保持心跳
+				err = json.Unmarshal(line, &resp)
+				if err != nil {
+					panic(err.Error())
+				}
+
+				if resp.RetType == "PING" {
+					clc := ClientCmd{
+						Cmd:    "PONG",
+						Params: "",
+					}
+					str, _ := json.Marshal(clc)
+					connout.WriteString(string(str) + "\n")
+					connout.Flush()
+				}
+
 				stdout.WriteString(string(line))
 				stdout.Flush()
+			} else {
+				fmt.Printf("read msg failed\n")
+				break
 			}
 		}
 	}()
@@ -51,14 +78,14 @@ func main() {
 	//发起认证
 	cc := ClientCmd{
 		Cmd:    "AUTH",
-		Params: "1000",
+		Params: "1001",
 	}
 	str, _ := json.Marshal(cc)
 	fmt.Printf("%s\n", string(str))
 	connout.WriteString(string(str) + "\n")
 	connout.Flush()
 
-	//负责接收用户输入
+	// 负责接收用户输入
 
 	for {
 		clc := ClientCmd{
@@ -66,10 +93,10 @@ func main() {
 			Params: "",
 		}
 		cm := ClientMsg{
-			UniqueId: time.Nanosecond(),
-			Content:  "hello world",
-			To:       10001,
-			Type:     4,
+			UniqueId: time.Now().UnixNano(),
+			Content:  "group say hello world from 1001",
+			To:       1,
+			Type:     3,
 		}
 		str, _ := json.Marshal(cm)
 		clc.Params = string(str)
@@ -78,6 +105,6 @@ func main() {
 		connout.WriteString(string(str2) + "\n")
 		connout.Flush()
 
-		time.Sleep(1 * time.Second)
+		time.Sleep(4 * time.Second)
 	}
 }

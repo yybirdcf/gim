@@ -22,6 +22,7 @@ func main() {
 
 	// start http listen.
 	StartPushSrv()
+	defer ClosePs()
 	// init process
 	// sleep one second, let the listen start
 	time.Sleep(time.Second)
