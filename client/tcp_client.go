@@ -30,7 +30,7 @@ type Resp struct {
 }
 
 func main() {
-	var ip = "127.0.0.1:8280"
+	var ip = "115.29.241.118:8280"
 	fmt.Printf("start to connect %s\n", ip)
 
 	conn, err := net.Dial("tcp", ip)
@@ -78,7 +78,7 @@ func main() {
 	//发起认证
 	cc := ClientCmd{
 		Cmd:    "AUTH",
-		Params: "1001",
+		Params: "1000",
 	}
 	str, _ := json.Marshal(cc)
 	fmt.Printf("%s\n", string(str))
@@ -94,7 +94,7 @@ func main() {
 		}
 		cm := ClientMsg{
 			UniqueId: time.Now().UnixNano(),
-			Content:  "group say hello world from 1001",
+			Content:  "group say hello world from 1000",
 			To:       1,
 			Type:     3,
 		}

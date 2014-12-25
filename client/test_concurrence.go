@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net"
-	// "os"
+	"os"
 	"strconv"
 	"time"
 )
@@ -33,8 +33,8 @@ type Resp struct {
 }
 
 func main() {
-	var ip = "127.0.0.1:8280"
-	for i := 10000; i < 20000; i++ {
+	var ip = "115.29.241.118:8280"
+	for i := 15000; i < 20000; i++ {
 		if i%500 == 0 {
 			time.Sleep(time.Second * 5)
 		}
@@ -50,7 +50,7 @@ func main() {
 			// defer conn.Close()
 
 			// stdin := bufio.NewReader(os.Stdin)
-			// stdout := bufio.NewWriter(os.Stdout)
+			stdout := bufio.NewWriter(os.Stdout)
 			connin := bufio.NewReader(conn)
 			connout := bufio.NewWriter(conn)
 
@@ -79,8 +79,8 @@ func main() {
 							connout.Flush()
 						}
 
-						// stdout.WriteString(string(line))
-						// stdout.Flush()
+						stdout.WriteString(string(line))
+						stdout.Flush()
 					} else if err == io.EOF {
 						fmt.Printf("read msg failed: %v\n", err.Error())
 						break

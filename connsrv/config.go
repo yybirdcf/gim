@@ -18,7 +18,7 @@ var (
 
 func InitConfig() error {
 	Conf = &Config{
-		TcpBind:    "127.0.0.1:8280",
+		TcpBind:    ":8280",
 		PidFile:    "/tmp/gim-connsrv.pid",
 		User:       "nobody nobody",
 		Dir:        "./",

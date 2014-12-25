@@ -22,7 +22,7 @@ func InitConfig() error {
 		User:    "nobody nobody",
 		Dir:     "./",
 		Store:   "mysql",
-		Dsn:     "root:loyodotaadminaaa@tcp(10.160.80.113:3306)/chat?charset=utf8",
+		Dsn:     "gotest:gotest@tcp(10.160.80.113:3306)/chat?charset=utf8",
 		ZooKeeper: []string{
 			"127.0.0.1:2181",
 		},

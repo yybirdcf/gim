@@ -20,7 +20,7 @@ CREATE TABLE `message` (
   PRIMARY KEY (`id`),
   KEY `idx_msg_uid` (`msg_uid`),
   KEY `idx_msg_mid` (`msg_mid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `user_group` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
@@ -29,4 +29,7 @@ CREATE TABLE `user_group` (
   PRIMARY KEY (`id`),
   KEY `idx_user` (`user_id`),
   KEY `idx_group` (`group_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO `user_group` (`user_id`, `group_id`) VALUES (1000, 1);
+INSERT INTO `user_group` (`user_id`, `group_id`) VALUES (1001, 1);

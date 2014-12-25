@@ -33,40 +33,42 @@ func StartSendSrv() {
 
 	rand.Seed(time.Now().UnixNano())
 
-	conn, _ := redis.Dial("tcp", Conf.Redis)
+	conn, err := redis.Dial("tcp", Conf.Redis)
+	if err != nil {
+		fmt.Printf("tcp redis %v\n", err.Error())
+		return
+	}
 	redClient = conn
 
 	msgGet, msgPut = common.MakeMessageRecycler()
 
 	msgPool = make(chan *common.Message, 4096)
 
-	for i := 0; i < Conf.MaxThread; i++ {
-		go func() {
-			msIdx := 0
-			psIdx := 0
-			for {
-				//ms列表有变化
-				if isMsStop || msLen == 0 || isPsStop || psLen == 0 {
-					time.Sleep(time.Second * 1)
-					continue
-				}
-				msIdx = rand.Intn(msLen)
-				psIdx = rand.Intn(psLen)
-				m, err := redis.String(redClient.Do("RPOP", "msg_queue_0"))
-				if m == "" {
-					time.Sleep(time.Second)
-					continue
-				}
+	go func() {
+		msIdx := 0
+		psIdx := 0
+		for {
+			//ms列表有变化
+			if isMsStop || msLen == 0 || isPsStop || psLen == 0 {
+				time.Sleep(time.Second * 1)
+				continue
+			}
+			msIdx = rand.Intn(msLen)
+			psIdx = rand.Intn(psLen)
+			m, err := redis.String(redClient.Do("RPOP", "msg_queue_0"))
+			if m == "" {
+				time.Sleep(time.Second)
+				continue
+			}
+			if err == nil {
+				var msg common.Message
+				err = json.Unmarshal([]byte(m), &msg)
 				if err == nil {
-					var msg common.Message
-					err = json.Unmarshal([]byte(m), &msg)
-					if err == nil {
-						HandleServerMsg(&msg, msClients[msIdx], pushSrvClients[psIdx])
-					}
+					HandleServerMsg(&msg, msClients[msIdx], pushSrvClients[psIdx])
 				}
 			}
-		}()
-	}
+		}
+	}()
 
 	go func() {
 		var success bool

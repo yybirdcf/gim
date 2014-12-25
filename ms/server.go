@@ -68,6 +68,7 @@ type GroupArgs struct {
 
 func (self *MS) GetGroupMembers(args *GroupArgs, reply *[]int) error {
 	*reply = store.GetGroupMembers(args.GroupId)
+	fmt.Printf("%v\n", *reply)
 	return nil
 }
 
