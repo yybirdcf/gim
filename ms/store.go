@@ -17,6 +17,7 @@ type Store interface {
 	Save(m *common.Message) bool
 	Read(who int, maxId int64, limit int) []common.Message
 	GetGroupMembers(groupId int) []int
+	GetUser(username string) common.User
 }
 
 func InitStore() error {

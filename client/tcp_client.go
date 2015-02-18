@@ -30,7 +30,8 @@ type Resp struct {
 }
 
 func main() {
-	var ip = "115.29.241.118:8280"
+	// var uid int
+	var ip = "127.0.0.1:8280"
 	fmt.Printf("start to connect %s\n", ip)
 
 	conn, err := net.Dial("tcp", ip)
@@ -45,6 +46,34 @@ func main() {
 	connin := bufio.NewReader(conn)
 	connout := bufio.NewWriter(conn)
 
+	//发起认证
+	cc := ClientCmd{
+		Cmd:    "AUTH",
+		Params: "gim#test#key&gim#test#key#secret&Jim&123456",
+	}
+	str, _ := json.Marshal(cc)
+	connout.WriteString(string(str) + "\n")
+	connout.Flush()
+
+	if line, _, err := connin.ReadLine(); err == nil {
+		//如果是服务器ping，则需要回复，保持心跳
+		var resp Resp
+		err = json.Unmarshal(line, &resp)
+		if err != nil {
+			panic(err.Error())
+		}
+
+		if resp.RetCode != 0 {
+			return
+		}
+
+		if resp.RetCode == 0 && resp.RetType == "AUTH" {
+			// uid = int(resp.RetData.(float64))
+		}
+	} else {
+		return
+	}
+
 	//gorouting负责接收服务器消息
 	go func() {
 		var resp Resp
@@ -53,7 +82,8 @@ func main() {
 				//如果是服务器ping，则需要回复，保持心跳
 				err = json.Unmarshal(line, &resp)
 				if err != nil {
-					panic(err.Error())
+					fmt.Printf("%v\n", line)
+					fmt.Printf("%s\n", err.Error())
 				}
 
 				if resp.RetType == "PING" {
@@ -75,16 +105,6 @@ func main() {
 		}
 	}()
 
-	//发起认证
-	cc := ClientCmd{
-		Cmd:    "AUTH",
-		Params: "1000",
-	}
-	str, _ := json.Marshal(cc)
-	fmt.Printf("%s\n", string(str))
-	connout.WriteString(string(str) + "\n")
-	connout.Flush()
-
 	// 负责接收用户输入
 
 	for {
@@ -94,9 +114,9 @@ func main() {
 		}
 		cm := ClientMsg{
 			UniqueId: time.Now().UnixNano(),
-			Content:  "group say hello world from 1000",
-			To:       1,
-			Type:     3,
+			Content:  "say hello world from Jim",
+			To:       1002,
+			Type:     4,
 		}
 		str, _ := json.Marshal(cm)
 		clc.Params = string(str)

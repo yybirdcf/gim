@@ -128,8 +128,8 @@ func StartSendSrv() {
 		for {
 			_, _, events, err := zkConn.ChildrenW(Conf.MsZkRoot)
 			if err != nil {
-				panic(err.Error())
-				return
+				time.Sleep(time.Second * 1)
+				continue
 			}
 
 			evt := <-events
@@ -175,8 +175,8 @@ func StartSendSrv() {
 		for {
 			_, _, events, err := zkConn.ChildrenW(Conf.PsZkRoot)
 			if err != nil {
-				panic(err.Error())
-				return
+				time.Sleep(time.Second * 1)
+				continue
 			}
 
 			evt := <-events

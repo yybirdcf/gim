@@ -6,6 +6,16 @@
 
 定义一套通用存储接口
 
+CREATE DATABASE `chat`;
+
+CREATE TABLE `user` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `username` varchar(255) NOT NULL DEFAULT '' COMMENT '昵称',
+  `password` varchar(255) NOT NULL DEFAULT '' COMMENT '密码',
+  `avatar` varchar(255) NOT NULL DEFAULT '' COMMENT '头像',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username` (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `message` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,

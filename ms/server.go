@@ -14,6 +14,10 @@ type RArgs struct {
 	Limit int
 }
 
+type UserArgs struct {
+	Username string
+}
+
 type MS struct {
 	buf chan *common.Message
 }
@@ -68,6 +72,12 @@ type GroupArgs struct {
 
 func (self *MS) GetGroupMembers(args *GroupArgs, reply *[]int) error {
 	*reply = store.GetGroupMembers(args.GroupId)
+	fmt.Printf("%v\n", *reply)
+	return nil
+}
+
+func (self *MS) GetUser(args *UserArgs, reply *common.User) error {
+	*reply = store.GetUser(args.Username)
 	fmt.Printf("%v\n", *reply)
 	return nil
 }

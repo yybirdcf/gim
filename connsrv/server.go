@@ -7,6 +7,7 @@ import (
 	"gim/common"
 	"github.com/garyburd/redigo/redis"
 	"github.com/samuel/go-zookeeper/zk"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -16,15 +17,17 @@ import (
 )
 
 var (
-	redClient     redis.Conn
-	sendSrvClient *rpc.Client
-	in            chan *common.Message
-	out           chan *common.Message
-	zkConn        *zk.Conn
-	get           chan *Client
-	put           chan *Client
-	getMsg        chan *common.Message
-	putMsg        chan *common.Message
+	redClient redis.Conn
+	msClients [20]*rpc.Client //ms rcp客户端列表
+	isMsStop  bool
+	msLen     int
+	in        chan *common.Message
+	out       chan *common.Message
+	zkConn    *zk.Conn
+	get       chan *Client
+	put       chan *Client
+	getMsg    chan *common.Message
+	putMsg    chan *common.Message
 )
 
 //定义服务器结构
@@ -35,6 +38,10 @@ type Server struct {
 	pending    chan net.Conn
 	quiting    chan *Client
 	activating chan *Client
+}
+
+type UserArgs struct {
+	Username string
 }
 
 func CreateServer() *Server {
@@ -100,7 +107,36 @@ func (self *Server) join(conn net.Conn) {
 		c := <-client.activating
 		//c!=nil代表时激活，否则就结束本次激活goroute
 		if c != nil {
-			fmt.Printf("client %d is activating", c.id)
+			//ms列表有变化
+			if isMsStop || msLen == 0 {
+				ret := RetJson(ERR_AUTH_FAILED, CMD_AUTH, "认证失败", nil)
+				c.out <- ret
+				return
+			}
+
+			msIdx := rand.Intn(msLen)
+
+			userArgs := UserArgs{
+				Username: c.username,
+			}
+
+			var user common.User
+			err := msClients[msIdx].Call("MS.GetUser", userArgs, &user)
+			if err != nil {
+				fmt.Printf("conn server call MS GetUser failed\n")
+			}
+
+			if user.Id == 0 || user.Password != c.password {
+				ret := RetJson(ERR_AUTH_FAILED, CMD_AUTH, "认证失败，账户密码错误", nil)
+				c.out <- ret
+				return
+			}
+
+			c.id = user.Id
+
+			ret := RetJson(0, CMD_AUTH, "认证成功", c.id)
+			c.out <- ret
+
 			self.activating <- c
 		}
 	}()
@@ -215,7 +251,7 @@ func (self *Server) Start() {
 	//服务器初始化完成以后，开启zookeeper
 	zkConn = common.ZkConnect(Conf.ZooKeeper)
 	common.ZkCreateRoot(zkConn, Conf.ZkRoot)
-	//为当前ms服务器创建一个节点，加入到ms集群中
+	//为当前服务器创建一个节点，加入到集群中
 	path := Conf.ZkRoot + "/" + Conf.RcpBind
 	common.ZkCreateTempNode(zkConn, path)
 	go func() {
@@ -239,6 +275,76 @@ func (self *Server) Start() {
 			fmt.Printf("%s receiver a event %v\n", path, event)
 		}
 	}()
+
+	//获取子节点列表
+	var size int
+	children := common.ZkGetChildren(zkConn, Conf.MsZkRoot)
+	if children != nil {
+		//开启新的客户端
+		for _, host := range children {
+			msClients[size] = initRpcClient(host)
+			size++
+		}
+
+		msLen = size
+		isMsStop = false
+		fmt.Printf("ms len %d\n", msLen)
+	}
+
+	//开一个goroute处理ms服务器节点变化
+	go func() {
+		for {
+			_, _, events, err := zkConn.ChildrenW(Conf.MsZkRoot)
+			if err != nil {
+				panic(err.Error())
+				return
+			}
+
+			evt := <-events
+			if evt.Type == zk.EventNodeChildrenChanged {
+				// ms节点有变化，更新ms列表
+				// 停止当前的ms处理
+				isMsStop = true
+				time.Sleep(time.Second * 1) //暂停一秒，让在处理中的ms处理完成
+
+				size = 0
+				//关闭原先ms客户端
+				for _, mc := range msClients {
+					if mc != nil {
+						mc.Close()
+						msClients[size] = nil
+					}
+					size++
+				}
+
+				//获取子节点列表
+				children := common.ZkGetChildren(zkConn, Conf.MsZkRoot)
+				if children == nil {
+					fmt.Printf("no ms rpc servers\n")
+					continue
+				}
+
+				size = 0
+				//开启新的客户端
+				for _, host := range children {
+					msClients[size] = initRpcClient(host)
+					size++
+				}
+
+				msLen = size
+				isMsStop = false
+				fmt.Printf("ms len %d\n", msLen)
+			}
+		}
+	}()
+}
+
+func initRpcClient(host string) *rpc.Client {
+	client, err := rpc.DialHTTP("tcp", host)
+	if err != nil {
+		panic(err.Error())
+	}
+	return client
 }
 
 func (self *Server) Stop() {

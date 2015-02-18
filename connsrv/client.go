@@ -8,7 +8,7 @@ import (
 	"gim/common"
 	"io"
 	"net"
-	"strconv"
+	"strings"
 	"time"
 )
 
@@ -50,6 +50,8 @@ type Client struct {
 	ready       int          //0未初始化，1正常初始化
 	lastAccTime int          //最近一次通信时间
 	quited      bool         //退出
+	username    string       //用户名
+	password    string       //密码
 }
 
 //客户端发送命令
@@ -205,15 +207,24 @@ func (self *Client) Read() {
 			} else {
 				//认证
 				if clientCmd.Cmd == CMD_AUTH {
-					//暂时没有认证过程,参数{uid}//{uid}&{token}
-					//认证失败，退出
-					uid, _ := strconv.Atoi(clientCmd.Params)
-					self.id = uid
+					//认证参数  {app_key}&{app_secret}&{user_name}&{user_password}
+					params := strings.Split(clientCmd.Params, "&")
+					if len(params) < 4 {
+						ret := RetJson(ERR_AUTH_FAILED, CMD_AUTH, "认证失败，参数错误", nil)
+						self.out <- ret
+						return
+					}
+
+					if params[0] != common.APP_KEY || params[1] != common.APP_SECRET {
+						ret := RetJson(ERR_AUTH_FAILED, CMD_AUTH, "认证失败，app key secret匹配错误", nil)
+						self.out <- ret
+						return
+					}
+
+					self.username = params[2]
+					self.password = params[3]
 					self.ready = CLIENT_READY
 					self.activating <- self
-
-					ret := RetJson(0, CMD_AUTH, "认证成功", nil)
-					self.out <- ret
 				} else {
 					ret := RetJson(ERR_NEED_AUTH, CMD_UNKNOW, "未知的消息类型，需要认证", nil)
 					self.out <- ret

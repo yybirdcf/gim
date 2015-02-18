@@ -133,8 +133,8 @@ func StartPushSrv() {
 		for {
 			_, _, events, err := connZkConn.ChildrenW(Conf.ConnZkRoot)
 			if err != nil {
-				panic(err.Error())
-				return
+				time.Sleep(time.Second * 1)
+				continue
 			}
 
 			evt := <-events

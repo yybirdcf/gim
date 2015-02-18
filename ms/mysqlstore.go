@@ -109,3 +109,26 @@ func (self *MysqlStore) GetGroupMembers(groupId int) []int {
 	fmt.Printf("members:%v\n", members)
 	return members
 }
+
+func (self *MysqlStore) GetUser(username string) common.User {
+	var user common.User
+
+	rows, err := self.db.Query("SELECT id, username, password, avatar FROM user WHERE username=?", username)
+	if err != nil {
+		fmt.Printf("%s\n", err.Error())
+		return user
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		err = rows.Scan(&user.Id, &user.Username, &user.Password, &user.Avatar)
+		if err != nil {
+			fmt.Printf("%s\n", err.Error())
+			panic(err.Error())
+		}
+
+		return user
+	}
+
+	return user
+}

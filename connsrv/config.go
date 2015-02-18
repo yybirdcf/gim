@@ -10,6 +10,7 @@ type Config struct {
 	Redis      string
 	ZooKeeper  []string //conn srvs
 	ZkRoot     string
+	MsZkRoot   string
 }
 
 var (
@@ -28,7 +29,8 @@ func InitConfig() error {
 		ZooKeeper: []string{
 			"127.0.0.1:2181",
 		},
-		ZkRoot: "/connsrv",
+		ZkRoot:   "/connsrv",
+		MsZkRoot: "/ms",
 	}
 
 	return nil
