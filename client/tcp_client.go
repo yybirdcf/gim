@@ -49,7 +49,7 @@ func main() {
 	//发起认证
 	cc := ClientCmd{
 		Cmd:    "AUTH",
-		Params: "gim#test#key&gim#test#key#secret&Jim&123456",
+		Params: "gim#test#key&gim#test#key#secret&Jack&123456",
 	}
 	str, _ := json.Marshal(cc)
 	connout.WriteString(string(str) + "\n")
@@ -64,6 +64,7 @@ func main() {
 		}
 
 		if resp.RetCode != 0 {
+			fmt.Printf("%s\n", "认证失败")
 			return
 		}
 
@@ -86,6 +87,7 @@ func main() {
 					fmt.Printf("%s\n", err.Error())
 				}
 
+				fmt.Printf("%v\n", resp)
 				if resp.RetType == "PING" {
 					clc := ClientCmd{
 						Cmd:    "PONG",
@@ -94,9 +96,22 @@ func main() {
 					str, _ := json.Marshal(clc)
 					connout.WriteString(string(str) + "\n")
 					connout.Flush()
+				} else if resp.RetType == "MSG" {
+					msg := resp.RetData.(map[string]interface{})
+					mid := int64(msg["Mid"].(float64))
+					fmt.Printf("%v\n", mid)
+					params := fmt.Sprintf("%d", mid)
+					clc := ClientCmd{
+						Cmd:    "MSRECEIVEACK",
+						Params: params,
+					}
+
+					str, _ := json.Marshal(clc)
+					connout.WriteString(string(str) + "\n")
+					connout.Flush()
 				}
 
-				stdout.WriteString(string(line))
+				// stdout.WriteString(string(line))
 				stdout.Flush()
 			} else {
 				fmt.Printf("read msg failed\n")
@@ -114,7 +129,7 @@ func main() {
 		}
 		cm := ClientMsg{
 			UniqueId: time.Now().UnixNano(),
-			Content:  "say hello world from Jim",
+			Content:  "say hello world from Jack",
 			To:       1002,
 			Type:     4,
 		}

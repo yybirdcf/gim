@@ -15,7 +15,8 @@ var (
 	msClients      [20]*rpc.Client //ms rcp客户端列表
 	redClient      redis.Conn
 	pushSrvClients [20]*rpc.Client //push rcp客户端列表
-	msgPool        chan *common.Message
+	msgPushPool    chan *common.Message
+	msgStorePool   chan *common.Message
 	zkConn         *zk.Conn
 	isMsStop       bool
 	isPsStop       bool
@@ -42,19 +43,18 @@ func StartSendSrv() {
 
 	msgGet, msgPut = common.MakeMessageRecycler()
 
-	msgPool = make(chan *common.Message, 4096)
+	msgPushPool = make(chan *common.Message, 4096)
+	msgStorePool = make(chan *common.Message, 4096)
 
 	go func() {
 		msIdx := 0
-		psIdx := 0
 		for {
 			//ms列表有变化
-			if isMsStop || msLen == 0 || isPsStop || psLen == 0 {
+			if isMsStop || msLen == 0 {
 				time.Sleep(time.Second * 1)
 				continue
 			}
 			msIdx = rand.Intn(msLen)
-			psIdx = rand.Intn(psLen)
 			m, err := redis.String(redClient.Do("RPOP", "msg_queue_0"))
 			if m == "" {
 				time.Sleep(time.Second)
@@ -64,8 +64,29 @@ func StartSendSrv() {
 				var msg common.Message
 				err = json.Unmarshal([]byte(m), &msg)
 				if err == nil {
-					HandleServerMsg(&msg, msClients[msIdx], pushSrvClients[psIdx])
+					HandleServerMsg(&msg, msClients[msIdx])
 				}
+			}
+		}
+	}()
+
+	go func() {
+		var success bool
+		psIdx := 0
+		for {
+			//ms列表有变化
+			if isPsStop || psLen == 0 {
+				time.Sleep(time.Second * 1)
+				continue
+			}
+
+			if m := <-msgPushPool; m != nil {
+				psIdx = rand.Intn(psLen)
+				err := pushSrvClients[psIdx].Call("PushSrv.SendMsg", *m, &success)
+				if err != nil || !success {
+					fmt.Printf("call push srv send message failed")
+				}
+				msgPut <- m
 			}
 		}
 	}()
@@ -80,7 +101,7 @@ func StartSendSrv() {
 				continue
 			}
 
-			if m := <-msgPool; m != nil {
+			if m := <-msgStorePool; m != nil {
 				//MS落地存储
 				msIdx = rand.Intn(msLen)
 				err := msClients[msIdx].Call("MS.SaveMessage", *m, &success)

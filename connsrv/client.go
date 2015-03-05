@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gim/common"
+	"github.com/garyburd/redigo/redis"
 	"io"
 	"net"
 	"strings"
@@ -21,12 +22,13 @@ type ClientMsg struct {
 }
 
 const (
-	CMD_MSG     = "MSG"
-	CMD_MSG_ACK = "MSGACK"
-	CMD_PING    = "PING"
-	CMD_PONG    = "PONG"
-	CMD_AUTH    = "AUTH"
-	CMD_UNKNOW  = "UNKOWN"
+	CMD_MSG             = "MSG"
+	CMD_SEND_MSG_ACK    = "MSSENDGACK"
+	CMD_PING            = "PING"
+	CMD_PONG            = "PONG"
+	CMD_AUTH            = "AUTH"
+	CMD_UNKNOW          = "UNKOWN"
+	CMD_RECEIVE_MSG_ACK = "MSRECEIVEACK" //长链接获取到的消息返回确认给服务器，服务器可以根据该信息确认信息是否已读
 
 	CLIENT_INIT  = 0
 	CLIENT_READY = 1
@@ -39,19 +41,20 @@ const (
 
 //每有一个客户端连接进来，就产生一个Client实例
 type Client struct {
-	conn        net.Conn
-	out         chan string
-	writer      *bufio.Writer
-	in          chan *common.Message
-	reader      *bufio.Reader
-	id          int          //用户id
-	quiting     chan *Client //gorouting监听是否退出，如果退出则放置到server的退出列表处理
-	activating  chan *Client //激活
-	ready       int          //0未初始化，1正常初始化
-	lastAccTime int          //最近一次通信时间
-	quited      bool         //退出
-	username    string       //用户名
-	password    string       //密码
+	conn           net.Conn
+	out            chan string
+	writer         *bufio.Writer
+	in             chan *common.Message
+	reader         *bufio.Reader
+	id             int          //用户id
+	quiting        chan *Client //gorouting监听是否退出，如果退出则放置到server的退出列表处理
+	activating     chan *Client //激活
+	ready          int          //0未初始化，1正常初始化
+	lastAccTime    int          //最近一次通信时间
+	quited         bool         //退出
+	username       string       //用户名
+	password       string       //密码
+	clientMsgIdKey string
 }
 
 //客户端发送命令
@@ -133,6 +136,9 @@ func (self *Client) Read() {
 	var clientCmd ClientCmd
 	var cm ClientMsg
 
+	redClient := pool.Get()
+	defer redClient.Close()
+
 	for {
 		if self.quited {
 			return
@@ -182,7 +188,8 @@ func (self *Client) Read() {
 
 						self.lastAccTime = int(time.Now().Unix())
 						//回写发送成功消息
-						ret := RetJson(0, CMD_MSG_ACK, "OK", cm.UniqueId)
+						ret := RetJson(0, CMD_SEND_MSG_ACK, "OK", cm.UniqueId)
+						fmt.Printf("%v\n", ret)
 						self.out <- ret
 					} else {
 						ret := RetJson(ERR_CODE_MSG_UNKNOW_TYPE, CMD_UNKNOW, "未知消息的消息类型", nil)
@@ -200,6 +207,9 @@ func (self *Client) Read() {
 				case CMD_PONG:
 					//服务器发出的心跳响应
 					self.lastAccTime = int(time.Now().Unix())
+				case CMD_RECEIVE_MSG_ACK:
+					//客户端消息回执, redis存储已读消息id
+					redClient.Do("SET", self.clientMsgIdKey, clientCmd.Params)
 				default:
 					ret := RetJson(ERR_CODE_MSG_UNKNOW_TYPE, CMD_UNKNOW, "未知的消息类型", nil)
 					self.out <- ret
@@ -300,4 +310,12 @@ func (self *Client) ShutDown() {
 	close(self.out)
 	close(self.activating)
 	close(self.quiting)
+}
+
+func (self *Client) ReadMaxMsgId() int64 {
+	redClient := pool.Get()
+	defer redClient.Close()
+
+	maxId, _ := redis.Int64(redClient.Do("GET", self.clientMsgIdKey))
+	return maxId
 }

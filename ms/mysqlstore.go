@@ -18,6 +18,7 @@ func NewMysqlStore() *MysqlStore {
 	db, err := sql.Open("mysql", Conf.Dsn)
 	if err != nil {
 		panic(err.Error())
+		return nil
 	}
 
 	mysqlStore.db = db
@@ -44,7 +45,7 @@ func (self *MysqlStore) Read(who int, maxId int64, limit int) []common.Message {
 			To      int
 			Group   int
 		)
-		err = rows.Scan(&Mid, &Uid, &Content, &Type, &Time, &From, &To, &Group)
+		err = rows.Scan(&Uid, &Mid, &Content, &Type, &Time, &From, &To, &Group)
 		if err != nil {
 			fmt.Printf("%s\n", err.Error())
 			panic(err.Error())
@@ -69,19 +70,17 @@ func (self *MysqlStore) Save(m *common.Message) bool {
 	stmt, err := self.db.Prepare("INSERT INTO message (msg_uid, msg_mid, msg_content, msg_type, msg_time, msg_from, msg_to, msg_group) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
-		panic(err.Error())
+		return false
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(m.Uid, m.Mid, m.Content, m.Type, m.Time, m.From, m.To, m.Group)
+	_, err = stmt.Exec(m.Uid, m.Mid, m.Content, m.Type, m.Time, m.From, m.To, m.Group)
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
-		panic(err.Error())
 		return false
 	}
 
-	affect, err := res.RowsAffected()
-	fmt.Printf("rows affect %d\n", affect)
+	fmt.Printf("%v\n", *m)
 	return true
 }
 
@@ -106,7 +105,7 @@ func (self *MysqlStore) GetGroupMembers(groupId int) []int {
 
 		members = append(members, user)
 	}
-	fmt.Printf("members:%v\n", members)
+
 	return members
 }
 

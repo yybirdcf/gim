@@ -16,8 +16,10 @@ import (
 	"time"
 )
 
+const USER_MAX_MSGID_PREFIX = "maxmsgid#"
+
 var (
-	redClient redis.Conn
+	pool      *redis.Pool
 	msClients [20]*rpc.Client //ms rcp客户端列表
 	isMsStop  bool
 	msLen     int
@@ -44,6 +46,12 @@ type UserArgs struct {
 	Username string
 }
 
+type RArgs struct {
+	Who   int
+	MaxId int64
+	Limit int
+}
+
 func CreateServer() *Server {
 	server := &Server{
 		clients:    make(map[int]*Client),
@@ -55,11 +63,22 @@ func CreateServer() *Server {
 
 	in = make(chan *common.Message)
 	out = make(chan *common.Message)
-	conn, err := redis.Dial("tcp", Conf.Redis)
-	if err != nil {
-		panic(err.Error())
+
+	pool = &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.Dial("tcp", Conf.Redis)
+			if err != nil {
+				return nil, err
+			}
+			return c, err
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
 	}
-	redClient = conn
 
 	get, put = makeClientRecycler()
 	getMsg, putMsg = common.MakeMessageRecycler()
@@ -70,6 +89,8 @@ func CreateServer() *Server {
 
 func (self *Server) listen() {
 	go func() {
+		redClient := pool.Get()
+		defer redClient.Close()
 		for {
 			select {
 			case msg := <-in:
@@ -84,8 +105,12 @@ func (self *Server) listen() {
 				}
 			case msg := <-out:
 				//客户端需要发出去的消息
+
 				s, _ := json.Marshal(*msg)
-				redClient.Do("LPUSH", common.MSG_QUEUE_0, string(s))
+				_, err := redClient.Do("LPUSH", common.MSG_QUEUE_0, string(s))
+				if err != nil {
+					fmt.Printf("%v\n", err.Error())
+				}
 				putMsg <- msg
 			case conn := <-self.pending:
 				self.join(conn) //新客户端处理
@@ -132,9 +157,11 @@ func (self *Server) join(conn net.Conn) {
 				return
 			}
 
+			//认证通过
 			c.id = user.Id
+			c.clientMsgIdKey = fmt.Sprintf("client#maxmsg#%d", c.id)
 
-			ret := RetJson(0, CMD_AUTH, "认证成功", c.id)
+			ret := RetJson(0, CMD_AUTH, "认证成功", nil)
 			c.out <- ret
 
 			self.activating <- c
@@ -153,6 +180,8 @@ func (self *Server) join(conn net.Conn) {
 
 //删除一个客户端
 func (self *Server) quit(client *Client) {
+	redClient := pool.Get()
+	defer redClient.Close()
 	if client != nil {
 		//删除客户端map信息
 		self.lock.Lock()
@@ -176,6 +205,8 @@ func (self *Server) quit(client *Client) {
 
 //激活一个客户端,如果重连，删除之前的客户端结构
 func (self *Server) activate(client *Client) {
+	redClient := pool.Get()
+	defer redClient.Close()
 	if client != nil {
 		self.lock.Lock()
 		if _, ok := self.clients[client.id]; ok {
@@ -218,6 +249,42 @@ func (self *Server) activate(client *Client) {
 		client.KeepCliAlive()
 		//开启客户端自检
 		client.CheckSelf()
+
+		//下发未读信息，包括多少未读信息，以及最多最近10条未读消息
+		maxMsgId := client.ReadMaxMsgId()
+		//获取当前生成的msg id
+		maxGenId, _ := redis.Int64(redClient.Do("GET", USER_MAX_MSGID_PREFIX+strconv.Itoa(client.id)))
+		fmt.Printf("max msg id: %d\n", maxMsgId)
+		fmt.Printf("max gen id: %d\n", maxGenId)
+		//获取多少未读信息
+		offTotal := (int)(maxGenId - maxMsgId)
+		//最多最近10条未读消息
+		limit := 0
+		if offTotal > 1000 {
+			limit = 1000
+			maxMsgId = maxGenId - 1000
+		} else {
+			limit = offTotal
+		}
+
+		args := RArgs{
+			Who:   client.id,
+			MaxId: maxMsgId,
+			Limit: limit,
+		}
+
+		var msgs []common.Message
+
+		msIdx := rand.Intn(msLen)
+		err := msClients[msIdx].Call("MS.ReadMessages", args, &msgs)
+		if err != nil {
+			fmt.Printf("conn server call MS ReadMessages failed\n")
+		}
+
+		for _, msg := range msgs {
+			ret := RetJson(0, CMD_MSG, "OK", msg)
+			client.out <- ret
+		}
 	}
 }
 
@@ -296,8 +363,8 @@ func (self *Server) Start() {
 		for {
 			_, _, events, err := zkConn.ChildrenW(Conf.MsZkRoot)
 			if err != nil {
-				panic(err.Error())
-				return
+				time.Sleep(time.Second * 1)
+				continue
 			}
 
 			evt := <-events
@@ -348,6 +415,7 @@ func initRpcClient(host string) *rpc.Client {
 }
 
 func (self *Server) Stop() {
+	pool.Close()
 	self.listener.Close()
 	zkConn.Delete(Conf.ZkRoot+"/"+Conf.RcpBind, 0)
 	zkConn.Close()
@@ -375,6 +443,8 @@ func StartRpc() {
 		}
 	}()
 
+	redClient := pool.Get()
+	defer redClient.Close()
 	//将机器机器rpc对应的tcp关系写了redis，让前端分配tcp服务器时候查找
 	redClient.Do("SET", common.RCP_TCP_HOST_PREFIX+Conf.RcpBind, Conf.TcpBind)
 }

@@ -31,6 +31,7 @@ type PushSrv struct {
 
 func (self *PushSrv) SendMsg(args *common.Message, reply *bool) error {
 	self.buf <- args
+	*reply = true
 	return nil
 }
 

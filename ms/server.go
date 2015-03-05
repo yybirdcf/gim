@@ -40,7 +40,7 @@ func NewMS() *MS {
 			if m != nil {
 				b := store.Save(m)
 				if b {
-					fmt.Printf("save message success: %v", m)
+
 				} else {
 					fmt.Printf("save message failed: %v", m)
 				}

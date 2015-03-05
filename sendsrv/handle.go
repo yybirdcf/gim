@@ -23,7 +23,7 @@ func getUserMsgId(userId int) int {
 }
 
 //发过来消息字符串
-func HandleServerMsg(msg *common.Message, msClient *rpc.Client, pushSrvClient *rpc.Client) {
+func HandleServerMsg(msg *common.Message, msClient *rpc.Client) {
 	//点对点消息
 	if msg.Type == common.MESSAGE_TYPE_USER {
 		//获取发送者消息空间ID
@@ -52,15 +52,11 @@ func HandleServerMsg(msg *common.Message, msClient *rpc.Client, pushSrvClient *r
 		mTo.Group = msg.Group
 
 		//接收者消息发送给目的地push srv
-		var reply bool
-		err := pushSrvClient.Call("PushSrv.SendMsg", *mTo, &reply)
-		if err != nil {
-			fmt.Printf("call push srv send message failed: %s\n", err.Error())
-		}
+		msgPushPool <- mTo
 
 		//将生成的消息给MS存储
-		msgPool <- mFrom
-		msgPool <- mTo
+		msgStorePool <- mFrom
+		msgStorePool <- mTo
 	} else if msg.Type == common.MESSAGE_TYPE_GROUP {
 		fmt.Printf("%v\n", *msg)
 		//群组消息
@@ -86,7 +82,7 @@ func HandleServerMsg(msg *common.Message, msClient *rpc.Client, pushSrvClient *r
 		mFrom.To = msg.To
 		mFrom.Group = msg.Group
 
-		msgPool <- mFrom
+		msgStorePool <- mFrom
 		for i := 0; i < len(members); i++ {
 			//获取接收者消息空间ID
 			if members[i] == msg.From {
@@ -105,29 +101,18 @@ func HandleServerMsg(msg *common.Message, msClient *rpc.Client, pushSrvClient *r
 			mTo.Group = msg.Group
 
 			//接收者消息发送给目的地push srv
-			var reply bool
-			err := pushSrvClient.Call("PushSrv.SendMsg", *mTo, &reply)
-			if err != nil {
-				panic(err.Error())
-			}
+			msgPushPool <- mTo
+
 			//存储消息
-			msgPool <- mTo
+			msgStorePool <- mTo
 		}
 	} else if msg.Type == common.MESSAGE_TYPE_SUB {
 
 		//接收者消息发送给目的地push srv
-		var reply bool
-		err := pushSrvClient.Call("PushSrv.SendMsg", *msg, &reply)
-		if err != nil {
-			fmt.Printf("call push srv send message failed: %s\n", err.Error())
-		}
+		msgPushPool <- msg
 	} else if msg.Type == common.MESSAGE_TYPE_PUBLIC {
 		//公开消息
 		//接收者消息发送给目的地push srv
-		var reply bool
-		err := pushSrvClient.Call("PushSrv.SendMsg", *msg, &reply)
-		if err != nil {
-			fmt.Printf("call push srv send message failed: %s\n", err.Error())
-		}
+		msgPushPool <- msg
 	}
 }
