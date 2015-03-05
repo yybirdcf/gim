@@ -80,7 +80,6 @@ func (self *MysqlStore) Save(m *common.Message) bool {
 		return false
 	}
 
-	fmt.Printf("%v\n", *m)
 	return true
 }
 

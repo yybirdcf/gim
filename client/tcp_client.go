@@ -130,7 +130,7 @@ func main() {
 		cm := ClientMsg{
 			UniqueId: time.Now().UnixNano(),
 			Content:  "say hello world from Jack",
-			To:       1002,
+			To:       1001,
 			Type:     4,
 		}
 		str, _ := json.Marshal(cm)

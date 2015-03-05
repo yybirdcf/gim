@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"gim/common"
 	"github.com/garyburd/redigo/redis"
 	"net/rpc"
@@ -28,7 +27,6 @@ func HandleServerMsg(msg *common.Message, msClient *rpc.Client) {
 	if msg.Type == common.MESSAGE_TYPE_USER {
 		//获取发送者消息空间ID
 		senderMaxId := getUserMsgId(msg.From)
-
 		mFrom := <-msgGet
 		mFrom.Mid = senderMaxId
 		mFrom.Uid = msg.From
@@ -58,7 +56,6 @@ func HandleServerMsg(msg *common.Message, msClient *rpc.Client) {
 		msgStorePool <- mFrom
 		msgStorePool <- mTo
 	} else if msg.Type == common.MESSAGE_TYPE_GROUP {
-		fmt.Printf("%v\n", *msg)
 		//群组消息
 		//获取群组成员
 		args := GroupArgs{

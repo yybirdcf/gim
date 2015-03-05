@@ -44,7 +44,7 @@ func StartSendSrv() {
 	msgGet, msgPut = common.MakeMessageRecycler()
 
 	msgPushPool = make(chan *common.Message, 4096)
-	msgStorePool = make(chan *common.Message, 4096)
+	msgStorePool = make(chan *common.Message)
 
 	go func() {
 		msIdx := 0
@@ -86,7 +86,6 @@ func StartSendSrv() {
 				if err != nil || !success {
 					fmt.Printf("call push srv send message failed")
 				}
-				msgPut <- m
 			}
 		}
 	}()
@@ -101,7 +100,8 @@ func StartSendSrv() {
 				continue
 			}
 
-			if m := <-msgStorePool; m != nil {
+			select {
+			case m := <-msgStorePool:
 				//MS落地存储
 				msIdx = rand.Intn(msLen)
 				err := msClients[msIdx].Call("MS.SaveMessage", *m, &success)
