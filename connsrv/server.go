@@ -96,8 +96,8 @@ func (self *Server) listen() {
 			case msg := <-in:
 				//新消息处理
 				//获取客户端
-				client := self.clients[msg.Uid]
-				if client != nil {
+				client, ok := self.clients[msg.Uid]
+				if ok {
 					client.lastAccTime = int(time.Now().Unix())
 
 					ret := RetJson(0, CMD_MSG, "OK", *msg)
@@ -105,13 +105,19 @@ func (self *Server) listen() {
 				}
 			case msg := <-out:
 				//客户端需要发出去的消息
-
 				s, _ := json.Marshal(*msg)
 				_, err := redClient.Do("LPUSH", common.MSG_QUEUE_0, string(s))
 				if err != nil {
 					fmt.Printf("%v\n", err.Error())
 				}
 				putMsg <- msg
+			}
+		}
+	}()
+
+	go func() {
+		for {
+			select {
 			case conn := <-self.pending:
 				self.join(conn) //新客户端处理
 			case client := <-self.quiting:
@@ -187,6 +193,7 @@ func (self *Server) quit(client *Client) {
 		self.lock.Lock()
 		delete(self.clients, client.id)
 		self.lock.Unlock()
+
 		//删除客户端在线信息
 		_, err := redClient.Do("DEL", common.USER_ONLINE_PREFIX+strconv.Itoa(client.id))
 		if err != nil {

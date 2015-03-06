@@ -103,18 +103,15 @@ func (self *Client) Listen() {
 
 //处理写缓冲
 func (self *Client) Write() {
-	for m := range self.out {
+	for {
+		m := <-self.out
+
 		if self.quited {
 			return
 		}
 
-		if _, err := self.writer.WriteString(m + "\n"); err != nil {
-			return
-		}
-
-		if err := self.writer.Flush(); err != nil {
-			return
-		}
+		self.writer.WriteString(m + "\n")
+		self.writer.Flush()
 	}
 }
 
@@ -189,7 +186,6 @@ func (self *Client) Read() {
 						self.lastAccTime = int(time.Now().Unix())
 						//回写发送成功消息
 						ret := RetJson(0, CMD_SEND_MSG_ACK, "OK", cm.UniqueId)
-						fmt.Printf("%v\n", ret)
 						self.out <- ret
 					} else {
 						ret := RetJson(ERR_CODE_MSG_UNKNOW_TYPE, CMD_UNKNOW, "未知消息的消息类型", nil)
@@ -295,7 +291,6 @@ func (self *Client) Quit() {
 
 func (self *Client) Close() {
 	if self.conn != nil {
-		fmt.Printf("%d close\n", self.id)
 		self.conn.Close()
 	}
 

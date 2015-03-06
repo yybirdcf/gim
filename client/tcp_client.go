@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"gim/common"
 	"net"
 	"os"
 	"time"
@@ -38,7 +39,7 @@ func main() {
 	if err != nil {
 		fmt.Printf("connect to %s failed\n", ip)
 	}
-
+	fmt.Printf("connect success\n")
 	defer conn.Close()
 
 	// stdin := bufio.NewReader(os.Stdin)
@@ -109,6 +110,8 @@ func main() {
 					str, _ := json.Marshal(clc)
 					connout.WriteString(string(str) + "\n")
 					connout.Flush()
+				} else if resp.RetType == "MSSENDGACK" {
+					fmt.Printf("%v\n", "msg send success")
 				}
 
 				// stdout.WriteString(string(line))
@@ -121,25 +124,30 @@ func main() {
 	}()
 
 	// 负责接收用户输入
+	go func() {
+		for {
+			clc := ClientCmd{
+				Cmd:    "MSG",
+				Params: "",
+			}
+			cm := ClientMsg{
+				UniqueId: time.Now().UnixNano(),
+				Content:  "say hello world from Jack",
+				To:       1001,
+				Type:     4,
+			}
+			str, _ := json.Marshal(cm)
+			clc.Params = string(str)
+			str2, _ := json.Marshal(clc)
 
-	for {
-		clc := ClientCmd{
-			Cmd:    "MSG",
-			Params: "",
+			connout.WriteString(string(str2) + "\n")
+			connout.Flush()
+
+			time.Sleep(4 * time.Second)
 		}
-		cm := ClientMsg{
-			UniqueId: time.Now().UnixNano(),
-			Content:  "say hello world from Jack",
-			To:       1001,
-			Type:     4,
-		}
-		str, _ := json.Marshal(cm)
-		clc.Params = string(str)
-		str2, _ := json.Marshal(clc)
+	}()
 
-		connout.WriteString(string(str2) + "\n")
-		connout.Flush()
-
-		time.Sleep(4 * time.Second)
-	}
+	signalCH := common.InitSignal()
+	common.HandleSignal(signalCH)
+	fmt.Printf("client stop\n")
 }
