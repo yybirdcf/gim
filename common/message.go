@@ -17,7 +17,7 @@ type Message struct {
 	Uid     int
 	Content string
 	Type    int
-	Time    int
+	Time    int64
 	From    int
 	To      int
 	Group   int

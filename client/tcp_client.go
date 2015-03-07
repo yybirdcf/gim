@@ -72,6 +72,7 @@ func main() {
 
 		if resp.RetCode == 0 && resp.RetType == "AUTH" {
 			// uid = int(resp.RetData.(float64))
+			fmt.Printf("认证成功\n")
 			isOff = 0
 		}
 	} else {
@@ -91,30 +92,24 @@ func main() {
 				}
 
 				fmt.Printf("%v\n", resp)
-				if resp.RetType == "PING" {
-					clc := ClientCmd{
-						Cmd:    "PONG",
-						Params: "",
-					}
-					str, _ := json.Marshal(clc)
-					connout.WriteString(string(str) + "\n")
-					connout.Flush()
+				if resp.RetType == "PONG" {
+					//保持连接
 				} else if resp.RetType == "MSG" {
 					msg := resp.RetData.(map[string]interface{})
 					mid := int64(msg["Mid"].(float64))
 					fmt.Printf("%v\n", mid)
 					params := fmt.Sprintf("%d", mid)
 					clc := ClientCmd{
-						Cmd:    "MSRECEIVEACK",
+						Cmd:    "RACK",
 						Params: params,
 					}
 
 					str, _ := json.Marshal(clc)
 					connout.WriteString(string(str) + "\n")
 					connout.Flush()
-				} else if resp.RetType == "MSSENDGACK" {
+				} else if resp.RetType == "SACK" {
 					fmt.Printf("%v\n", "msg send success")
-				} else if resp.RetType == "KICKOUT" {
+				} else if resp.RetType == "KICK" {
 					fmt.Printf("kick out\n")
 					isOff = 1
 					break
@@ -152,8 +147,24 @@ func main() {
 
 			connout.WriteString(string(str2) + "\n")
 			connout.Flush()
-
+			fmt.Printf("%v\n", string(str2))
 			time.Sleep(4 * time.Second)
+		}
+	}()
+
+	go func() {
+		for {
+			if isOff == 1 {
+				break
+			}
+			time.Sleep(time.Second * 3)
+			clc := ClientCmd{
+				Cmd:    "PING",
+				Params: "",
+			}
+			str, _ := json.Marshal(clc)
+			connout.WriteString(string(str) + "\n")
+			connout.Flush()
 		}
 	}()
 

@@ -1,0 +1,40 @@
+2015-03-02 22:13:43,989 [myid:] - INFO  [main:QuorumPeerConfig@103] - Reading configuration from: /Users/chenhaipeng/Downloads/zookeeper-3.4.6/bin/../conf/zoo.cfg
+2015-03-02 22:13:43,995 [myid:] - INFO  [main:DatadirCleanupManager@78] - autopurge.snapRetainCount set to 3
+2015-03-02 22:13:43,995 [myid:] - INFO  [main:DatadirCleanupManager@79] - autopurge.purgeInterval set to 0
+2015-03-02 22:13:43,995 [myid:] - INFO  [main:DatadirCleanupManager@101] - Purge task is not scheduled.
+2015-03-02 22:13:43,996 [myid:] - WARN  [main:QuorumPeerMain@113] - Either no config or no quorum defined in config, running  in standalone mode
+2015-03-02 22:13:44,012 [myid:] - INFO  [main:QuorumPeerConfig@103] - Reading configuration from: /Users/chenhaipeng/Downloads/zookeeper-3.4.6/bin/../conf/zoo.cfg
+2015-03-02 22:13:44,012 [myid:] - INFO  [main:ZooKeeperServerMain@95] - Starting server
+2015-03-02 22:13:44,029 [myid:] - INFO  [main:Environment@100] - Server environment:zookeeper.version=3.4.6-1569965, built on 02/20/2014 09:09 GMT
+2015-03-02 22:13:44,029 [myid:] - INFO  [main:Environment@100] - Server environment:host.name=chenhaiengdembp
+2015-03-02 22:13:44,029 [myid:] - INFO  [main:Environment@100] - Server environment:java.version=1.8.0_25
+2015-03-02 22:13:44,029 [myid:] - INFO  [main:Environment@100] - Server environment:java.vendor=Oracle Corporation
+2015-03-02 22:13:44,029 [myid:] - INFO  [main:Environment@100] - Server environment:java.home=/Library/Java/JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home/jre
+2015-03-02 22:13:44,029 [myid:] - INFO  [main:Environment@100] - Server environment:java.class.path=/Users/chenhaipeng/Downloads/zookeeper-3.4.6/bin/../build/classes:/Users/chenhaipeng/Downloads/zookeeper-3.4.6/bin/../build/lib/*.jar:/Users/chenhaipeng/Downloads/zookeeper-3.4.6/bin/../lib/slf4j-log4j12-1.6.1.jar:/Users/chenhaipeng/Downloads/zookeeper-3.4.6/bin/../lib/slf4j-api-1.6.1.jar:/Users/chenhaipeng/Downloads/zookeeper-3.4.6/bin/../lib/netty-3.7.0.Final.jar:/Users/chenhaipeng/Downloads/zookeeper-3.4.6/bin/../lib/log4j-1.2.16.jar:/Users/chenhaipeng/Downloads/zookeeper-3.4.6/bin/../lib/jline-0.9.94.jar:/Users/chenhaipeng/Downloads/zookeeper-3.4.6/bin/../zookeeper-3.4.6.jar:/Users/chenhaipeng/Downloads/zookeeper-3.4.6/bin/../src/java/lib/*.jar:/Users/chenhaipeng/Downloads/zookeeper-3.4.6/bin/../conf:
+2015-03-02 22:13:44,030 [myid:] - INFO  [main:Environment@100] - Server environment:java.library.path=/Users/chenhaipeng/Library/Java/Extensions:/Library/Java/Extensions:/Network/Library/Java/Extensions:/System/Library/Java/Extensions:/usr/lib/java:.
+2015-03-02 22:13:44,030 [myid:] - INFO  [main:Environment@100] - Server environment:java.io.tmpdir=/var/folders/zz/zyxvpxvq6csfxvn_n0000000000000/T/
+2015-03-02 22:13:44,030 [myid:] - INFO  [main:Environment@100] - Server environment:java.compiler=<NA>
+2015-03-02 22:13:44,031 [myid:] - INFO  [main:Environment@100] - Server environment:os.name=Mac OS X
+2015-03-02 22:13:44,032 [myid:] - INFO  [main:Environment@100] - Server environment:os.arch=x86_64
+2015-03-02 22:13:44,032 [myid:] - INFO  [main:Environment@100] - Server environment:os.version=10.10.2
+2015-03-02 22:13:44,032 [myid:] - INFO  [main:Environment@100] - Server environment:user.name=root
+2015-03-02 22:13:44,032 [myid:] - INFO  [main:Environment@100] - Server environment:user.home=/var/root
+2015-03-02 22:13:44,032 [myid:] - INFO  [main:Environment@100] - Server environment:user.dir=/Users/chenhaipeng/Documents/go/src/gim/client
+2015-03-02 22:13:44,040 [myid:] - INFO  [main:ZooKeeperServer@755] - tickTime set to 2000
+2015-03-02 22:13:44,041 [myid:] - INFO  [main:ZooKeeperServer@764] - minSessionTimeout set to -1
+2015-03-02 22:13:44,041 [myid:] - INFO  [main:ZooKeeperServer@773] - maxSessionTimeout set to -1
+2015-03-02 22:13:44,073 [myid:] - INFO  [main:NIOServerCnxnFactory@94] - binding to port 0.0.0.0/0.0.0.0:2181
+2015-03-02 22:13:44,074 [myid:] - ERROR [main:ZooKeeperServerMain@63] - Unexpected exception, exiting abnormally
+java.net.BindException: Address already in use
+	at sun.nio.ch.Net.bind0(Native Method)
+	at sun.nio.ch.Net.bind(Net.java:436)
+	at sun.nio.ch.Net.bind(Net.java:428)
+	at sun.nio.ch.ServerSocketChannelImpl.bind(ServerSocketChannelImpl.java:214)
+	at sun.nio.ch.ServerSocketAdaptor.bind(ServerSocketAdaptor.java:74)
+	at sun.nio.ch.ServerSocketAdaptor.bind(ServerSocketAdaptor.java:67)
+	at org.apache.zookeeper.server.NIOServerCnxnFactory.configure(NIOServerCnxnFactory.java:95)
+	at org.apache.zookeeper.server.ZooKeeperServerMain.runFromConfig(ZooKeeperServerMain.java:111)
+	at org.apache.zookeeper.server.ZooKeeperServerMain.initializeAndRun(ZooKeeperServerMain.java:86)
+	at org.apache.zookeeper.server.ZooKeeperServerMain.main(ZooKeeperServerMain.java:52)
+	at org.apache.zookeeper.server.quorum.QuorumPeerMain.initializeAndRun(QuorumPeerMain.java:116)
+	at org.apache.zookeeper.server.quorum.QuorumPeerMain.main(QuorumPeerMain.java:78)

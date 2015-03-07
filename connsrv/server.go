@@ -16,42 +16,43 @@ import (
 	"time"
 )
 
-const USER_MAX_MSGID_PREFIX = "maxmsgid#"
-
 var (
-	pool      *redis.Pool
-	msClients [20]*rpc.Client //ms rcp客户端列表
-	isMsStop  bool
-	msLen     int
-	in        chan *common.Message
-	out       chan *common.Message
-	zkConn    *zk.Conn
-	get       chan *Client
-	put       chan *Client
-	getMsg    chan *common.Message
-	putMsg    chan *common.Message
+	redisPool *redis.Pool          //redis 连接池
+	msClients [20]*rpc.Client      //ms rpc客户端列表
+	isMsStop  bool                 //message store是否暂停
+	msLen     int                  //message store节点数量
+	in        chan *common.Message //输入消息
+	out       chan *common.Message //输出消息
+	zkConn    *zk.Conn             //zookeeper
+	getCli    chan *Client         //获取缓存客户端结构
+	putCli    chan *Client         //放回缓存客户端结构
+	getMsg    chan *common.Message //获取缓存消息结构
+	putMsg    chan *common.Message //放回缓存消息结构
 )
 
 //定义服务器结构
 type Server struct {
 	listener   net.Listener
-	clients    map[int]*Client
-	lock       *sync.RWMutex
-	pending    chan net.Conn
-	quiting    chan *Client
-	activating chan *Client
+	clients    map[int]*Client //客户端映射表
+	lock       *sync.RWMutex   //map锁
+	pending    chan net.Conn   //待处理连接channel
+	quiting    chan *Client    //退出客户端channel
+	activating chan *Client    //待激活客户端channel
 }
 
+//ms获取账户信息参数结构
 type UserArgs struct {
-	Username string
+	Username string //用户名或id
 }
 
+//ms拉取消息参数结构
 type RArgs struct {
-	Who   int
-	MaxId int64
-	Limit int
+	Who   int   //拉取对象
+	MaxId int64 //最大消息id
+	Limit int   //拉取数量
 }
 
+//创建服务器
 func CreateServer() *Server {
 	server := &Server{
 		clients:    make(map[int]*Client),
@@ -64,12 +65,15 @@ func CreateServer() *Server {
 	in = make(chan *common.Message)
 	out = make(chan *common.Message)
 
-	pool = &redis.Pool{
+	//初始化redis连接池
+	redisPool = &redis.Pool{
 		MaxIdle:     3,
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redis.Conn, error) {
 			c, err := redis.Dial("tcp", Conf.Redis)
 			if err != nil {
+				//redis连接失败直接报错
+				panic(err.Error())
 				return nil, err
 			}
 			return c, err
@@ -80,7 +84,7 @@ func CreateServer() *Server {
 		},
 	}
 
-	get, put = makeClientRecycler()
+	getCli, putCli = makeClientRecycler()
 	getMsg, putMsg = common.MakeMessageRecycler()
 
 	server.listen()
@@ -89,7 +93,7 @@ func CreateServer() *Server {
 
 func (self *Server) listen() {
 	go func() {
-		redClient := pool.Get()
+		redClient := redisPool.Get()
 		defer redClient.Close()
 		for {
 			select {
@@ -98,18 +102,13 @@ func (self *Server) listen() {
 				//获取客户端
 				client, ok := self.clients[msg.Uid]
 				if ok {
-					client.lastAccTime = int(time.Now().Unix())
-
-					ret := RetJson(0, CMD_MSG, "OK", *msg)
+					ret := RetJson(0, CMD_S_MSG, "OK", *msg)
 					client.out <- ret
 				}
 			case msg := <-out:
-				//客户端需要发出去的消息
+				//客户端需要发出去的消息，写到redis队列，由sendsrv分发
 				s, _ := json.Marshal(*msg)
-				_, err := redClient.Do("LPUSH", common.MSG_QUEUE_0, string(s))
-				if err != nil {
-					fmt.Printf("%v\n", err.Error())
-				}
+				redClient.Do("LPUSH", common.MSG_QUEUE_0, string(s))
 				putMsg <- msg
 			}
 		}
@@ -131,7 +130,7 @@ func (self *Server) listen() {
 
 //增加一个客户端
 func (self *Server) join(conn net.Conn) {
-	client := <-get
+	client := <-getCli
 	client.Init(conn)
 	//开一个gorouting处理客户端激活
 	go func() {
@@ -140,7 +139,7 @@ func (self *Server) join(conn net.Conn) {
 		if c != nil {
 			//ms列表有变化
 			if isMsStop || msLen == 0 {
-				ret := RetJson(ERR_AUTH_FAILED, CMD_AUTH, "认证失败", nil)
+				ret := RetJson(ERR_CLIENT_AUTH_FAILED, CMD_S_AUTH, "认证失败，连接数据库服务器失败", nil)
 				c.out <- ret
 				return
 			}
@@ -158,16 +157,16 @@ func (self *Server) join(conn net.Conn) {
 			}
 
 			if user.Id == 0 || user.Password != c.password {
-				ret := RetJson(ERR_AUTH_FAILED, CMD_AUTH, "认证失败，账户密码错误", nil)
+				ret := RetJson(ERR_CLIENT_AUTH_FAILED, CMD_S_AUTH, "认证失败，账户密码错误", nil)
 				c.out <- ret
 				return
 			}
 
 			//认证通过
 			c.id = user.Id
-			c.clientMsgIdKey = fmt.Sprintf("client#maxmsg#%d", c.id)
+			c.ready = CLIENT_READY
 
-			ret := RetJson(0, CMD_AUTH, "认证成功", nil)
+			ret := RetJson(0, CMD_S_AUTH, "认证成功", nil)
 			c.out <- ret
 
 			self.activating <- c
@@ -184,16 +183,45 @@ func (self *Server) join(conn net.Conn) {
 	}()
 }
 
-//删除一个客户端
+//退出，删除一个客户端
 func (self *Server) quit(client *Client) {
-	redClient := pool.Get()
+	redClient := redisPool.Get()
 	defer redClient.Close()
-	if client != nil {
-		//删除客户端map信息
-		self.lock.Lock()
-		delete(self.clients, client.id)
-		self.lock.Unlock()
+	if client == nil {
+		return
+	}
+	//删除客户端map信息
+	self.lock.Lock()
+	delete(self.clients, client.id)
+	self.lock.Unlock()
 
+	//删除客户端在线信息
+	_, err := redClient.Do("DEL", common.USER_ONLINE_PREFIX+strconv.Itoa(client.id))
+	if err != nil {
+		fmt.Printf("delete %d online map status failed\n", client.id)
+	}
+	_, err2 := redClient.Do("DEL", common.USER_ONLINE_HOST_PREFIX+strconv.Itoa(client.id))
+	if err2 != nil {
+		fmt.Printf("delete %d online host map status failed\n", client.id)
+	}
+
+	client.Close()
+	putCli <- client
+	fmt.Printf("client %d quited\n", client.id)
+}
+
+//激活一个客户端,如果重连，删除之前的客户端结构
+func (self *Server) activate(client *Client) {
+	redClient := redisPool.Get()
+	defer redClient.Close()
+
+	if client == nil {
+		return
+	}
+
+	self.lock.Lock()
+	//如果该用户已经连接一个终端，剔出
+	if oldClient, ok := self.clients[client.id]; ok {
 		//删除客户端在线信息
 		_, err := redClient.Do("DEL", common.USER_ONLINE_PREFIX+strconv.Itoa(client.id))
 		if err != nil {
@@ -203,98 +231,72 @@ func (self *Server) quit(client *Client) {
 		if err2 != nil {
 			fmt.Printf("delete %d online host map status failed\n", client.id)
 		}
+		self.clients[client.id].Kickout()
+		delete(self.clients, client.id)
+		putCli <- oldClient
+	}
 
-		client.Close()
-		put <- client
-		fmt.Printf("client quited\n")
+	self.clients[client.id] = client
+	self.lock.Unlock()
+
+	//用户上线
+	redClient.Do("SET", common.USER_ONLINE_PREFIX+strconv.Itoa(client.id), 1)
+	//写用户在线的机器
+	redClient.Do("SET", common.USER_ONLINE_HOST_PREFIX+strconv.Itoa(client.id), Conf.RcpBind)
+	//激活的客户端开启goroute处理客户端发出的消息
+	go func() {
+		for {
+			if client.quited {
+				return
+			}
+
+			if msg := <-client.in; msg != nil {
+				out <- msg
+			}
+		}
+	}()
+
+	//开启客户端自检
+	client.CheckSelf()
+
+	//下发未读信息，包括多少未读信息，以及最多最近1000条未读消息
+	clientMaxMsgKey := USER_MAX_MSGID_PREFIX + strconv.Itoa(client.id)
+	maxMsgId, _ := redis.Int64(redClient.Do("GET", clientMaxMsgKey))
+	//获取当前生成的msg id
+	maxGenId, _ := redis.Int64(redClient.Do("GET", clientMaxMsgKey))
+	//获取多少未读信息
+	offTotal := (int)(maxGenId - maxMsgId)
+	//最多最近10条未读消息
+	limit := 0
+	if offTotal > 1000 {
+		limit = 1000
+		maxMsgId = maxGenId - 1000
+	} else {
+		limit = offTotal
+	}
+
+	args := RArgs{
+		Who:   client.id,
+		MaxId: maxMsgId,
+		Limit: limit,
+	}
+
+	var msgs []common.Message
+
+	msIdx := rand.Intn(msLen)
+	err := msClients[msIdx].Call("MS.ReadMessages", args, &msgs)
+	if err != nil {
+		fmt.Printf("conn server call MS ReadMessages failed\n")
+	}
+
+	//离线消息发送到客户端
+	for _, msg := range msgs {
+		ret := RetJson(0, CMD_S_MSG, "OK", msg)
+		client.out <- ret
 	}
 }
 
-//激活一个客户端,如果重连，删除之前的客户端结构
-func (self *Server) activate(client *Client) {
-	redClient := pool.Get()
-	defer redClient.Close()
-	if client != nil {
-		self.lock.Lock()
-		if oldClient, ok := self.clients[client.id]; ok {
-			//删除客户端在线信息
-			_, err := redClient.Do("DEL", common.USER_ONLINE_PREFIX+strconv.Itoa(client.id))
-			if err != nil {
-				fmt.Printf("delete %d online map status failed\n", client.id)
-			}
-			_, err2 := redClient.Do("DEL", common.USER_ONLINE_HOST_PREFIX+strconv.Itoa(client.id))
-			if err2 != nil {
-				fmt.Printf("delete %d online host map status failed\n", client.id)
-			}
-			//如果客户端没有激活，需要关闭激活goroute
-			self.clients[client.id].Kickout()
-			delete(self.clients, client.id)
-			put <- oldClient
-		}
-
-		self.clients[client.id] = client
-		self.lock.Unlock()
-
-		//用户上线
-		redClient.Do("SET", common.USER_ONLINE_PREFIX+strconv.Itoa(client.id), 1)
-		//写用户在线的机器
-		redClient.Do("SET", common.USER_ONLINE_HOST_PREFIX+strconv.Itoa(client.id), Conf.RcpBind)
-		//激活的客户端开启goroute处理客户端发出的消息
-		go func() {
-			for {
-				if client.quited {
-					return
-				}
-
-				if msg := <-client.in; msg != nil {
-					out <- msg
-				}
-			}
-		}()
-
-		//开启客户端心跳维持
-		client.KeepCliAlive()
-		//开启客户端自检
-		client.CheckSelf()
-
-		//下发未读信息，包括多少未读信息，以及最多最近10条未读消息
-		maxMsgId := client.ReadMaxMsgId()
-		//获取当前生成的msg id
-		maxGenId, _ := redis.Int64(redClient.Do("GET", USER_MAX_MSGID_PREFIX+strconv.Itoa(client.id)))
-		fmt.Printf("max msg id: %d\n", maxMsgId)
-		fmt.Printf("max gen id: %d\n", maxGenId)
-		//获取多少未读信息
-		offTotal := (int)(maxGenId - maxMsgId)
-		//最多最近10条未读消息
-		limit := 0
-		if offTotal > 1000 {
-			limit = 1000
-			maxMsgId = maxGenId - 1000
-		} else {
-			limit = offTotal
-		}
-
-		args := RArgs{
-			Who:   client.id,
-			MaxId: maxMsgId,
-			Limit: limit,
-		}
-
-		var msgs []common.Message
-
-		msIdx := rand.Intn(msLen)
-		err := msClients[msIdx].Call("MS.ReadMessages", args, &msgs)
-		if err != nil {
-			fmt.Printf("conn server call MS ReadMessages failed\n")
-		}
-
-		for _, msg := range msgs {
-			ret := RetJson(0, CMD_MSG, "OK", msg)
-			client.out <- ret
-		}
-	}
-}
-
+//服务器启动
 func (self *Server) Start() {
 	listener, err := net.Listen("tcp", Conf.TcpBind)
 	self.listener = listener
@@ -333,14 +335,12 @@ func (self *Server) Start() {
 			exist, _, watch, err := zkConn.ExistsW(path)
 			if err != nil {
 				//发生错误，当前节点退出
-				fmt.Printf("%s occur error\n", path)
 				common.KillSelf()
 				return
 			}
 
 			if !exist {
 				//节点不存在了
-				fmt.Printf("%s not exist\n", path)
 				common.KillSelf()
 				return
 			}
@@ -350,13 +350,13 @@ func (self *Server) Start() {
 		}
 	}()
 
-	//获取子节点列表
+	//获取存储子节点列表
 	var size int
 	children := common.ZkGetChildren(zkConn, Conf.MsZkRoot)
 	if children != nil {
 		//开启新的客户端
 		for _, host := range children {
-			msClients[size] = initRpcClient(host)
+			msClients[size] = common.InitRpcClient(host)
 			size++
 		}
 
@@ -401,7 +401,7 @@ func (self *Server) Start() {
 				size = 0
 				//开启新的客户端
 				for _, host := range children {
-					msClients[size] = initRpcClient(host)
+					msClients[size] = common.InitRpcClient(host)
 					size++
 				}
 
@@ -413,16 +413,8 @@ func (self *Server) Start() {
 	}()
 }
 
-func initRpcClient(host string) *rpc.Client {
-	client, err := rpc.DialHTTP("tcp", host)
-	if err != nil {
-		panic(err.Error())
-	}
-	return client
-}
-
 func (self *Server) Stop() {
-	pool.Close()
+	redisPool.Close()
 	self.listener.Close()
 	zkConn.Delete(Conf.ZkRoot+"/"+Conf.RcpBind, 0)
 	zkConn.Close()
@@ -450,7 +442,7 @@ func StartRpc() {
 		}
 	}()
 
-	redClient := pool.Get()
+	redClient := redisPool.Get()
 	defer redClient.Close()
 	//将机器机器rpc对应的tcp关系写了redis，让前端分配tcp服务器时候查找
 	redClient.Do("SET", common.RCP_TCP_HOST_PREFIX+Conf.RcpBind, Conf.TcpBind)
@@ -474,7 +466,7 @@ func makeClientRecycler() (get, put chan *Client) {
 			select {
 			case b := <-put:
 				timeout.Stop()
-				b.lastAccTime = int(time.Now().Unix())
+				b.lastAccTime = time.Now().Unix()
 				queue.PushFront(b)
 			case get <- ct.Value.(*Client):
 				timeout.Stop()
@@ -483,7 +475,7 @@ func makeClientRecycler() (get, put chan *Client) {
 				ct := queue.Front()
 				for ct != nil {
 					n := ct.Next()
-					if (int(time.Now().Unix()) - ct.Value.(*Client).lastAccTime) > int(time.Second*60) {
+					if time.Now().Unix()-ct.Value.(*Client).lastAccTime > int64(time.Second*60) {
 						ct.Value.(*Client).ShutDown()
 						queue.Remove(ct)
 						ct.Value = nil
