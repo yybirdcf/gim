@@ -103,6 +103,12 @@ func (self *Client) Listen() {
 
 //处理写缓冲
 func (self *Client) Write() {
+	defer func() {
+		if err := recover(); err != nil {
+			self.Quit()
+		}
+	}()
+
 	for {
 		m := <-self.out
 
@@ -241,7 +247,7 @@ func (self *Client) Read() {
 			break
 		} else {
 			//读取数据失败，可能连接错误，活着连接关闭等等
-			fmt.Printf("%v\n", err.Error())
+			fmt.Printf("read error : %v\n", err.Error())
 			self.Quit()
 			break
 		}
