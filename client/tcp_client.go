@@ -42,6 +42,7 @@ func main() {
 	fmt.Printf("connect success\n")
 	defer conn.Close()
 
+	isOff := 1
 	// stdin := bufio.NewReader(os.Stdin)
 	stdout := bufio.NewWriter(os.Stdout)
 	connin := bufio.NewReader(conn)
@@ -71,6 +72,7 @@ func main() {
 
 		if resp.RetCode == 0 && resp.RetType == "AUTH" {
 			// uid = int(resp.RetData.(float64))
+			isOff = 0
 		}
 	} else {
 		return
@@ -112,6 +114,10 @@ func main() {
 					connout.Flush()
 				} else if resp.RetType == "MSSENDGACK" {
 					fmt.Printf("%v\n", "msg send success")
+				} else if resp.RetType == "KICKOUT" {
+					fmt.Printf("kick out\n")
+					isOff = 1
+					break
 				}
 
 				// stdout.WriteString(string(line))
@@ -126,6 +132,10 @@ func main() {
 	// 负责接收用户输入
 	go func() {
 		for {
+			if isOff == 1 {
+				break
+			}
+
 			clc := ClientCmd{
 				Cmd:    "MSG",
 				Params: "",

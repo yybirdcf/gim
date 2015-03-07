@@ -216,7 +216,7 @@ func (self *Server) activate(client *Client) {
 	defer redClient.Close()
 	if client != nil {
 		self.lock.Lock()
-		if _, ok := self.clients[client.id]; ok {
+		if oldClient, ok := self.clients[client.id]; ok {
 			//删除客户端在线信息
 			_, err := redClient.Do("DEL", common.USER_ONLINE_PREFIX+strconv.Itoa(client.id))
 			if err != nil {
@@ -227,9 +227,9 @@ func (self *Server) activate(client *Client) {
 				fmt.Printf("delete %d online host map status failed\n", client.id)
 			}
 			//如果客户端没有激活，需要关闭激活goroute
-			fmt.Printf("server %d close\n", client.id)
-			self.clients[client.id].Close()
+			self.clients[client.id].Kickout()
 			delete(self.clients, client.id)
+			put <- oldClient
 		}
 
 		self.clients[client.id] = client

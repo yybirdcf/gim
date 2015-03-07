@@ -29,6 +29,7 @@ const (
 	CMD_AUTH            = "AUTH"
 	CMD_UNKNOW          = "UNKOWN"
 	CMD_RECEIVE_MSG_ACK = "MSRECEIVEACK" //长链接获取到的消息返回确认给服务器，服务器可以根据该信息确认信息是否已读
+	CMD_KICKOUT         = "KICKOUT"      //被踢出
 
 	CLIENT_INIT  = 0
 	CLIENT_READY = 1
@@ -304,6 +305,14 @@ func (self *Client) Close() {
 	self.reader = nil
 	self.conn = nil
 	self.quited = true
+}
+
+func (self *Client) Kickout() {
+	//被踢，先发送一个被踢命令到客户端，然后关闭连接
+	ret := RetJson(0, CMD_KICKOUT, "OK", nil)
+	self.writer.WriteString(ret + "\n")
+	self.writer.Flush()
+	self.Close()
 }
 
 func (self *Client) ShutDown() {
